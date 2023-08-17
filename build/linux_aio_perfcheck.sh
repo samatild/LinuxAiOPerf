@@ -1,11 +1,30 @@
 #!/bin/bash
 
-# Linux All-in-one Performance checker [without netowork]
+# Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
-# Author: samatild
-# Date: 26/07/2023
+# About: https://github.com/samatild/LinuxAiOPerf
+# version: 1.3
+# Date: 17/Aug/2023
 
-echo "[Linux AIO Perfomance Checker]"
+clear
+echo -e "\e[1;34m"
+cat << "EOF"
+
+ ================================
+||      Linux All-in-One        ||
+||   Performance Collector      ||
+ ================================
+
+* Unlocking advanced Linux metrics for humans *
+EOF
+
+echo -e "\e[1;33m"
+cat << "EOF"
+ --------------------
+| Package Validation |
+ --------------------
+EOF
+
 
 # Function to check if a package is installed
 is_package_installed() {
@@ -21,7 +40,6 @@ is_package_installed() {
             return 1  # Package is not installed
         fi
     fi
-    
 }
 
 # Function to install a package using the package manager
@@ -42,21 +60,24 @@ install_package() {
     fi
 }
 
-# Check the distribution to determine the package manager and package name
+# Check the distribution to determine the package manager and package names
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 
 case "$distro" in
     ubuntu)
         package_manager="apt-get"
-        package_name="sysstat"
+        sysstat_package_name="sysstat"
+        iotop_package_name="iotop"
         ;;
     sles)
         package_manager="zypper"
-        package_name="sysstat"
+        sysstat_package_name="sysstat"
+        iotop_package_name="iotop"
         ;;
     rhel|centos)
         package_manager="yum"
-        package_name="sysstat"
+        sysstat_package_name="sysstat"
+        iotop_package_name="iotop"
         ;;
     *)
         echo "Unsupported distribution: $distro"
@@ -64,35 +85,68 @@ case "$distro" in
         ;;
 esac
 
+# Check if sysstat and iotop packaes are installed
+sysstat_installed=false
+iotop_installed=false
 
-# Check if sysstat package is installed
-if is_package_installed "$package_name"; then
-    echo "[sysstat package is installed]"
+if is_package_installed "$sysstat_package_name"; then
+    sysstat_installed=true
+    echo -e "\e[0;37m[sysstat] \e[0;32mInstalled\e[0m"
 else
-    # Prompt the user for installation
-    read -rp "sysstat package is not installed. Do you want to install it? (y/n): " choice
+    echo -e "\e[0;37m[sysstat] \e[0;31mNot installed\e[0m"
+fi
+
+if is_package_installed "$iotop_package_name"; then
+    iotop_installed=true
+    echo -e "\e[0;37m[iotop] \e[0;32mInstalled\e[0m"
+else
+    echo -e "\e[0;37m[iotop] \e[0;31mNot installed\e[0m"
+fi
+
+# Prompt the user for installation
+if ! $sysstat_installed || ! $iotop_installed; then
+    echo -e "\e[0m"
+    read -rp "Dependecies not met. Do you want to install them? (y/n): " choice
     if [[ $choice == [Yy] ]]; then
-        # Install the package
-        echo "Installing sysstat package..."
-        install_package "$package_manager" "$package_name"
-        echo "sysstat package installed successfully."
+        if ! $sysstat_installed; then
+            # Install the sysstat package
+            echo "Installing sysstat package..."
+            install_package "$package_manager" "$sysstat_package_name"
+            echo "sysstat package installed successfully."
+        fi
+
+        if ! $iotop_installed; then
+            # Install the iotop package
+            echo "Installing iotop package..."
+            install_package "$package_manager" "$iotop_package_name"
+            echo "iotop package installed successfully."
+        fi
     else
-        echo "sysstat package not installed. Exiting..."
+        echo "Packages not installed. Exiting..."
         exit 0
     fi
+else
+     echo -e "\e[0;37m"
+     echo -e "Dependencies met. \e[0;32mValidation passed.\e[0m"
 fi
 
 
+# DATA CAPTURE STARTS HERE
+echo -e "\e[1;33m"
+cat << "EOF"
+ --------------------
+|    Data Capture    |
+ --------------------
+EOF
 
-# Prompt for duration in seconds
-read -p "Enter the capture duration in seconds (minimum 10, maximum 900): " duration
+echo -e "\e[1mEnter the capture duration in seconds (\e[0m\e[1;31mminimum 10\e[0m\e[1m, \e[0m\e[1;32mmaximum 900\e[0m\e[1m)\e[0m"
+read -p "Duration: " duration
 
-# Validate duration input
 if (( duration < 10 || duration > 900 )); then
     echo "Invalid duration. Please enter a value between 10 and 900."
     exit 1
 fi
-# Create output directory
+# Output Dir
 outputdir="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck"
 mkdir -p "$outputdir"
 
@@ -117,8 +171,12 @@ check_rhel_last_update() {
 # Determine the Linux distribution
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 
-echo "Logging which packages were last updated (...)"
-# Check the last package update timestamp based on the distribution
+echo "" 
+echo -e "\e[1;33mStarting\e[0m"
+
+echo "Gathering general system information (...)"
+
+# Check the last package update timestamp based on the distribution (yes we need to check according to distro)
 case $distro in
     ubuntu)
         check_ubuntu_last_update
@@ -135,7 +193,6 @@ case $distro in
 esac
 
 # General sysinfo
-echo "Gathering general system information (...)"
 cp /etc/os-release $outputdir/
 df -h >> "$outputdir/df-h.txt"
 lsblk -f >> "$outputdir/lsblk-f.txt"
@@ -168,16 +225,8 @@ while [[ $remaining_seconds -gt 0 ]]; do
     free -h >> "$outputdir/free.txt" 
     top -b -n 1 >> "$outputdir/top.txt"
     ps H -eo user,pid,ppid,start_time,%cpu,%mem,wchan,cmd --sort=%cpu >> "$outputdir/ps.txt"
-    
-    
-    
-    # IO and vmstat info
     sar -q 0 >> "$outputdir/sar-load-avg.txt"
-    #iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out"
-    #vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out"
-    #mpstat -P ALL 1 >> "$outputdir/mpstat.txt"
-
-    # iotop output
+    # iotop output (we log data because iotop doesn't keep a timestamp)
     date >> "$outputdir/iotop.txt"
     iotop -b -n 1 >> "$outputdir/iotop.txt"
     
@@ -187,18 +236,28 @@ while [[ $remaining_seconds -gt 0 ]]; do
     ((elapsed_seconds++))
 
 done
+
 pkill iostat
 pkill vmstat
 pkill mpstat
 pkill pidstat
 
+echo -e "\e[1;33mCapture Complete.\e[0m"
 
-echo "Complete. Creating ZIP Package and cleaning the thrash."
-# Create the zip file with hostname, date, time, and description
+echo -e "\e[1;33m"
+cat << "EOF"
+ --------------------
+|  Report Creation   |
+ --------------------
+EOF
+
+echo "Creating ZIP Package and cleaning the thrash."
+# Create the zip file
 zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.zip"
-zip -r "$zip_filename" "$outputdir"
+zip -r "$zip_filename" "$outputdir" >/dev/null 2>&1
 
 # Remove the output directory
 rm -rf "$outputdir"
 
-echo "Script execution completed. Output file: $(pwd)/$zip_filename"
+echo -e "\e[1;34mScript execution completed.\e[0m"
+echo -e "\e[1;34mOutput file:\e[0m \e[1;32m$(pwd)/$zip_filename\e[0m"

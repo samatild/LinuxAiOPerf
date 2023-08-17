@@ -1,14 +1,14 @@
 # Linux AIO Performance Checker
 
-Linux AIO Performance Checker is a web application built with Flask that allows you to upload and process ZIP files containing performance data for analysis. It provides an intuitive interface to upload ZIP files, extract their contents, execute performance analysis scripts, and view generated reports.
+Linux AIO Performance Checker is a web application built with Flask that allows you to upload and process ZIP files containing performance data for analysis. It provides an intuitive interface to upload report files, extract their contents, execute performance analysis scripts, and view generated reports.
 
-## Features
+## Key Features
 
-- Upload ZIP files containing performance data.
-- Extract ZIP file contents and execute performance analysis scripts.
-- View generated performance analysis reports.
+- All-in-one Linux Performance Collector Script
+- Report generated directly over Web Application
+- Fast, simple and user friendly.
 
-## Collecting Data - How to
+## How to Collect Data (Capture)
 
 ![how to collect data](assets/collecting_data.gif)
 
@@ -18,7 +18,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
     
     Example:
      ```bash
-     wget https://github.com/samatild/LinuxAiOPerf/releases/download/v1.2/linux_aio_collector_release_v1.2.sh
+     wget https://github.com/samatild/LinuxAiOPerf/releases/download/v1.3/linux_aio_collector_release_v1.3.sh
      ```
 
 2. Once uploaded to the Linux system, make it executable by running the following command:
@@ -34,7 +34,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
     # Note: the script will ask you to enter the desired time interval for data collection The minimum time interval is 10 seconds. The maximum time interval is 900 seconds (15 minutes)
     ```
 
-    > ⚠️ **Warning:** sysstat package is required for the script to execute. If the package is not installed the script will try to install it. If user disagrees with this, then the script will exit.
+    > ⚠️ **Warning:** sysstat and iotop packages are required for the script to execute. If the package is not installed the script will prompt user to install them. If user disagrees the script will exit.
 
 4. The script will collect performance data and generate a ZIP file containing the collected data. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
 

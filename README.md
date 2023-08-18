@@ -40,9 +40,9 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 
 ## Generating Reports - How to
 
-![how to collect data](assets/uploading_data.gif)
+![generate data](assets/uploading_data.gif)
 
-Use the following webpage to upload the ZIP file containing the performance data you want to analyze: [Linux AIO Perf Checker](https://linuxaioperf.matildes.dev/)
+## Open Report Generator: [Linux AIO Performance Checker](https://linuxaioperf.matildes.dev/)
 
 ## Interpreting Reports
 

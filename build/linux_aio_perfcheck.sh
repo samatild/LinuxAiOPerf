@@ -251,10 +251,10 @@ cat << "EOF"
  --------------------
 EOF
 
-echo "Creating ZIP Package and cleaning the thrash."
+echo "Creating tarball and cleaning the thrash."
 # Create the zip file
-zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.zip"
-zip -r "$zip_filename" "$outputdir" >/dev/null 2>&1
+zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.tar.gz"
+tar cfz "$zip_filename" "$outputdir" 
 
 # Remove the output directory
 rm -rf "$outputdir"

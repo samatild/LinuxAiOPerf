@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.3
-# Date: 17/Aug/2023
+# version: 1.4
+# Date: 24/Aug/2023
 
 clear
 echo -e "\e[1;34m"
@@ -261,3 +261,4 @@ rm -rf "$outputdir"
 
 echo -e "\e[1;34mScript execution completed.\e[0m"
 echo -e "\e[1;34mOutput file:\e[0m \e[1;32m$(pwd)/$zip_filename\e[0m"
+

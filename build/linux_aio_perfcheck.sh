@@ -304,8 +304,8 @@ function defineCron() {
         fi
         
         # Add the cron job entry for recurrent run
-        echo "$minutes */$hour * * * $(pwd)/script.sh --collect-now $duration" | crontab -
-        echo "Cron job added: $minutes */$hour * * * $(pwd)/script.sh --collect-now $duration"
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     else
         echo "Enter the exact cron schedule."
         echo "The schedule consists of five fields: minute hour day month day-of-week"
@@ -321,8 +321,8 @@ function defineCron() {
         fi
         
         # Add the cron job entry for non-recurrent run
-        echo "$cron_schedule $(pwd)/script.sh --collect-now $duration" | crontab -
-        echo "Cron job added: $cron_schedule $(pwd)/script.sh --collect-now $duration"
+        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     fi
     
     # Restart the chronyd service

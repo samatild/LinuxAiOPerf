@@ -24,7 +24,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
     
     Example:
      ```bash
-    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.4/linux_aio_perfcheck.tgz
+    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.5/linux_aio_perfcheck.tgz
     tar xfz linux_aio_perfcheck.tgz
      ```
 
@@ -41,11 +41,33 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
     # Note: the script will ask you to enter the desired time interval for data collection The minimum time interval is 10 seconds. The maximum time interval is 900 seconds (15 minutes)
     ```
 
-    > ⚠️ **Warning:** sysstat and iotop packages are required for the script to execute. If the package is not installed the script will prompt user to install them. If user disagrees the script will exit.
+    > ⚠️ **Warning:** sysstat and iotop packages are required for the script to execute. If packages are not installed the script will prompt user to install them. If user disagrees the script will exit.
 
 4. The script will collect performance data and generate a ZIP file containing the collected data. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
 
+## 🌟 Run Modes (New Feature)
 
+
+| Run Mode | What it does | For what occasion |  
+|----------|----------|----------|
+| Collect Live Data  | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
+| Collect Data based on resource utilization (Triggered CPU, Memory, Disk IO)  | It will setup a watchdog that will keep an eye for resource Utilization. In case CPU, Memory or Disk IO is above 80% it will trigger a data collection of 2 minutes. | For when you don't know when the problem is going to happen. | 
+| Collect data on a specific time (cronjob)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user section. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happenss. |
+
+## Compatibility
+
+The collector script is compatible with most modern Linux distributions as it uses standard OS commands to collect data.
+
+It as been tested with the following Linux distributions:
+
+- Ubuntu 18.04
+- Ubuntu 20.04
+- CentOS 7
+- CentOS 8
+- Red Hat Enterprise Linux 7
+- Red Hat Enterprise Linux 8
+- SUSE Linux Enterprise Server 15
+- SUSE Linux Enterprise Server 12
 
 ## Interpreting Reports
 
@@ -66,25 +88,12 @@ The following data is collected:
 | Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop   |
 | Generic OS information   | date, top, ps -H, sar, os-release, last installed updates |
 
+> ✅ **PII Notice:** No Personal, organization, or computer identifiable information is collected.
 
-## Compatibility
-
-The collector script is compatible with most modern Linux distributions as it uses standard OS commands to collect data.
-
-It as been tested with the following Linux distributions:
-
-- Ubuntu 18.04
-- Ubuntu 20.04
-- CentOS 7
-- CentOS 8
-- Red Hat Enterprise Linux 7
-- Red Hat Enterprise Linux 8
-- SUSE Linux Enterprise Server 15
-- SUSE Linux Enterprise Server 12
 
 ## Data privacy
 
-The data collected is not stored on the web server. The data is stored in a temporary directory on the web server and is deleted after 15 minutes.
+The data collected is not stored on the web server. The data is stored in a temporary directory on the web server and is deleted after 10 minutes.
 
 Part of the data processing requires the execution of JavaScript code on the client-side. The JavaScript code is executed in the browser and does not send any data to the web server.
 
@@ -92,7 +101,7 @@ Part of the data processing requires the execution of JavaScript code on the cli
 
 Every report will have its own unique ID. The UID is randomly generated and is not related to the data contained in the report. The UID is used to identify the report and to allow the user to view it. The UID is not stored in the database. The UID is used as the name of the directory where the report is stored.
 
-Each time a user uploads a ZIP file containing performance data, the data is stored in a temporary directory on the web server. The data is deleted after 15 minutes.
+Each time a user uploads a ZIP file containing performance data, the data is stored in a temporary directory on the web server. The data is deleted after 10 minutes.
 
 ## Credits
 

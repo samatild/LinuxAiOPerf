@@ -4,8 +4,8 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 
 ## Key Features
 
-- All-in-one Linux Performance Collector Script
-- Report generated directly over Web Application
+- All-in-one Linux Performance Collector Script.
+- Report generated directly over Web Application.
 - Fast, simple and user friendly.
 
 ## How to Generate Rerpots
@@ -53,6 +53,8 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 | Collect Live Data  | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
 | Collect Data based on resource utilization (Triggered CPU, Memory, Disk IO)  | It will setup a watchdog that will keep an eye for resource Utilization. In case CPU, Memory or Disk IO is above 80% it will trigger a data collection of 2 minutes. | For when you don't know when the problem is going to happen. | 
 | Collect data on a specific time (cronjob)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user section. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happenss. |
+
+   > ⚠️ **Attention:** When running on the 3rd mode (cronjob) the script will create a crontab entry but will not delete it. If you want to delete it you will need to do it manually. Don't forget to restart chronyd service after deleting the crontab entry.
 
 ## Compatibility
 

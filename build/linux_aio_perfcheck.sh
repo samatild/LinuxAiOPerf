@@ -305,7 +305,10 @@ function defineCron() {
         fi
         
         # Add the cron job entry for recurrent run
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        crontab -l > mycron
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        crontab mycron
+        rm mycron
         echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     else
         echo "Enter the exact cron schedule."
@@ -322,7 +325,10 @@ function defineCron() {
         fi
         
         # Add the cron job entry for non-recurrent run
-        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        crontab -l > mycron
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        crontab mycron
+        rm mycron
         echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     fi
     

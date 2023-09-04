@@ -3,7 +3,7 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.6
+# version: 1.7
 # Date: 04/Sep/2023
 
 function packageValidation(){
@@ -228,6 +228,8 @@ function dataCapture() {
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
     mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
     pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
+    sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
+
     # Repeat cycle every second until end time is reached
     while [[ $remaining_seconds -gt 0 ]]; do
         
@@ -257,6 +259,7 @@ function dataCapture() {
     pkill vmstat
     pkill mpstat
     pkill pidstat
+    pkill sar
     
     echo -e "\e[1;33mCapture Complete.\e[0m"
     createReport
@@ -525,7 +528,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.6"
+    echo "Linux All-in-One Performance Collector, version 1.7"
 else
     motd
 fi

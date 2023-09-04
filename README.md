@@ -24,7 +24,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
     
     Example:
      ```bash
-    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.6/linux_aio_perfcheck.tgz
+    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.7/linux_aio_perfcheck.tgz
     tar xfz linux_aio_perfcheck.tgz
      ```
 
@@ -45,7 +45,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 
 4. The script will collect performance data and generate a ZIP file containing the collected data. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
 
-## 🌟 Run Modes (New Feature)
+## 🌟 Run Modes (New)
 
 
 | Run Mode | What it does | For what occasion |  

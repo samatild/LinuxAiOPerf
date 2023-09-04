@@ -3,18 +3,18 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.5
-# Date: 25/Aug/2023
+# version: 1.6
+# Date: 04/Sep/2023
 
 function packageValidation(){
+
     echo -e "\e[1;33m"
     cat << "EOF"
- --------------------
-| Package Validation |
- --------------------
+ ======================
+   Package Validation  
+ ======================
 EOF
-    
-    
+   
     # Function to check if a package is installed
     is_package_installed() {
         local package_name=$1
@@ -126,7 +126,7 @@ function motd(){
     echo -e "\e[1;34m"
     cat << "EOF"
 
-================================
+  ================================
 ||      Linux All-in-One        ||
 ||   Performance Collector      ||
 ================================
@@ -140,9 +140,9 @@ function liveData() {
     # DATA CAPTURE STARTS HERE
     echo -e "\e[1;33m"
     cat << "EOF"
-     -------------------
-    | Live Data Capture |
-     -------------------
+ =======================
+    Live Data Capture  
+ =======================
 EOF
     
     echo -e "\e[1mEnter the capture duration in seconds (\e[0m\e[1;31mminimum 10\e[0m\e[1m, \e[0m\e[1;32mmaximum 900\e[0m\e[1m)\e[0m"
@@ -265,9 +265,9 @@ function dataCapture() {
 function createReport() {
     echo -e "\e[1;33m"
     cat << "EOF"
-    --------------------
-    |  Report Creation   |
-    --------------------
+ =====================
+    Report Creation  
+ =====================
 EOF
     
     echo "Creating tarball and cleaning the thrash."
@@ -284,8 +284,9 @@ EOF
 
 # Define the defineCron function
 function defineCron() {
-    echo ""
-    echo "[Cronjob Setup]"
+    echo -e "\033[1;34m=====================================================================\033[0m"
+    echo -e "\033[1;32m[Cronjob Setup]\033[0m"
+    echo -e "\033[1;34m=====================================================================\033[0m"
     echo "Do you want the job to run recurrently? (y/n): "
     read -r choice
     
@@ -304,7 +305,10 @@ function defineCron() {
         fi
         
         # Add the cron job entry for recurrent run
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        crontab -l > mycron
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        crontab mycron
+        rm mycron
         echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     else
         echo "Enter the exact cron schedule."
@@ -321,7 +325,10 @@ function defineCron() {
         fi
         
         # Add the cron job entry for non-recurrent run
-        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" | crontab -
+        crontab -l > mycron
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        crontab mycron
+        rm mycron
         echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
     fi
     
@@ -331,63 +338,121 @@ function defineCron() {
     echo "chronyd service restarted."
 }
 
+# Setup Watchdog 
+setupResourceWatchdog() {
+    
+    local monitor_cpu=0
+    local monitor_mem=0
+    local monitor_io=0
+    local cpu_threshold=80
+    local mem_threshold=80
+    local io_threshold=80
 
-function resourceWatchdog() {
-    
-    #    echo "Creating and running resource_watchdog.sh..."
-    
-    echo "Running watchdog"
-    
-    echo "Resource watchdog started. PID: $$"
-    LOG_FILE=$(pwd)/.resource_watchdog_log
-    
-    # Watchdog loop starts here
-    while true; do
+    echo -e "\033[1;34m=====================================================================\033[0m"
+    echo -e "\033[1;32mChoose a mode for the Resource Watchdog:\033[0m"
+    echo -e "\033[1;34m=====================================================================\033[0m"
+    echo -e "\033[1;36m1 - Auto   \033[0m: Monitor CPU, memory, and disk at 80% Threshold"
+    echo -e "\033[1;36m2 - Manual \033[0m: Choose resources and Threshold to monitor"
+    echo -e "\033[1;34m=====================================================================\033[0m"
+    read -p "$(echo -e "\033[1;33mEnter 1 or 2: \033[0m")" mode
+
+
+    if [[ "$mode" != "1" && "$mode" != "2" ]]; then
+        echo "Invalid choice. Exiting."
+        exit 1
+    fi
+
+    if [ "$mode" == "2" ]; then
+        echo -e "\033[1;34m============================================\033[0m"
+        echo -e "\033[1;32mResource Monitoring Choices:\033[0m"
+        echo -e "\033[1;34m============================================\033[0m"
         
-        # CPU
-        cpu_util=$(mpstat 1 1 | awk '/Average:/ {print 100 - $NF}')
+        read -p "$(echo -e "\033[1;36mMonitor CPU? (yes/no):\033[0m ")" cpu_choice
         
-        # MEMORY
-        mem_util=$(free | awk '/Mem:/ {print ($3 / $2) * 100}')
-        
-        # Get the current IO utilization percentages for all devices
-        iostat -d -x 1 2 | grep -v Device |grep -v cpu | grep -v CPU > .iostat.txt
-        
-        highIO=0
-        
-        # Check if .iostat.txt exists
-        if [ -f .iostat.txt ]; then
-            while read -r line; do
-                if [[ -n "$line" ]]; then
-                    # Get the last column value
-                    last_column=$(echo "$line" | awk '{print $NF}')
-                    
-                    # Check if the value is greater than 80
-                    if (( $(echo "$last_column > 80" | bc -l) )); then
-                        highIO=1
-                        break  # No need to continue checking
-                    fi
-                fi
-            done < .iostat.txt
+        if [ "$cpu_choice" == "yes" ]; then
+            monitor_cpu=1
+            read -p "$(echo -e "\033[1;33mSet CPU threshold (0-100):\033[0m ")" cpu_threshold
         fi
-        rm -f .iostat.txt
-        echo "$(date '+%Y-%m-%d %H:%M:%S ')Current CPU Utilization: $cpu_util%" >> "$LOG_FILE"
-        echo "$(date '+%Y-%m-%d %H:%M:%S ')Current Memory Utilization: $mem_util%" >> "$LOG_FILE"
         
-        # Check if CPU utilization is above 80% or memory usage is above 80%
-        if (( $(echo "$cpu_util > 80" | bc -l) == 1 || $(echo "$mem_util > 80" | bc -l) == 1 || $highIO == 1)); then
-            echo "$(date '+%Y-%m-%d %H:%M:%S ')CPU or memory utilization above 80%. Running script.sh..." >> "$LOG_FILE"
-            $(pwd)/linux_aio_perfcheck.sh --collect-now 120
+        read -p "$(echo -e "\033[1;36mMonitor Memory? (yes/no):\033[0m ")" mem_choice
+        
+        if [ "$mem_choice" == "yes" ]; then
+            monitor_mem=1
+            read -p "$(echo -e "\033[1;33mSet Memory threshold (0-100):\033[0m ")" mem_threshold
+        fi
+        
+        read -p "$(echo -e "\033[1;36mMonitor Disk IO? (yes/no):\033[0m ")" io_choice
+        
+        if [ "$io_choice" == "yes" ]; then
+            monitor_io=1
+            read -p "$(echo -e "\033[1;33mSet Disk IO threshold (0-100):\033[0m ")" io_threshold
+        fi
+        
+        echo -e "\033[1;34m============================================\033[0m"
+    
+    else
+        monitor_cpu=1
+        monitor_mem=1
+        monitor_io=1
+        cpu_threshold=80
+        mem_threshold=80
+        io_threshold=80
+    fi
+
+    $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" &
+    
+}
+
+runResourceWatchdog() {
+
+    local monitor_cpu=$1
+    local monitor_mem=$2
+    local monitor_io=$3
+    local cpu_threshold=$4
+    local mem_threshold=$5
+    local io_threshold=$6
+    local LOG_FILE=$(pwd)/.resource_watchdog_log
+
+    echo -e "\033[1;34mResource watchdog started. \033[1;32mPID: $$\033[0m"
+
+    while true; do
+        local highIO=0
+        local cpu_util=0
+        local mem_util=0
+
+        if [ "$monitor_cpu" == "1" ]; then
+            cpu_util=$(mpstat 1 1 | awk '/Average:/ {print 100 - $NF}')
+            echo "$(date '+%Y-%m-%d %H:%M:%S ')Current CPU Utilization: $cpu_util%" >> "$LOG_FILE"
+        fi
+
+        if [ "$monitor_mem" == "1" ]; then
+            mem_util=$(free | awk '/Mem:/ {print ($3 / $2) * 100}')
+            echo "$(date '+%Y-%m-%d %H:%M:%S ')Current Memory Utilization: $mem_util%" >> "$LOG_FILE"
+        fi
+
+        if [ "$monitor_io" == "1" ]; then
+            iostat -d -x 1 2 | grep -v Device | grep -v cpu | grep -v CPU > .iostat.txt
+            if [ -f .iostat.txt ]; then
+                while read -r line; do
+                    if [[ -n "$line" ]]; then
+                        local last_column=$(echo "$line" | awk '{print $NF}')
+                        if (( $(echo "$last_column > $io_threshold" | bc -l) )); then
+                            highIO=1
+                            break
+                        fi
+                    fi
+                done < .iostat.txt
+            fi
+            rm -f .iostat.txt
+        fi
+
+        if (( $(echo "$cpu_util > $cpu_threshold" | bc -l) == 1 || $(echo "$mem_util > $mem_threshold" | bc -l) == 1 || $highIO == 1 )); then
+            echo "$(date '+%Y-%m-%d %H:%M:%S ')Resource utilization above thresholds. Running Collector" >> "$LOG_FILE"
+            $(pwd)/linux_aio_perfcheck.sh --collect-now 60
             exit 1
         fi
-        
         sleep 5
     done
-    
-    
-    # Exit the script
-    exit 0
-    
 }
 
 # Function to display a disclaimer and get user's agreement
@@ -402,7 +467,7 @@ function displayDisclaimer() {
         echo "Aborted. Exiting..."
         exit 0
     else
-        $(pwd)/linux_aio_perfcheck.sh --watchdog &
+        setupResourceWatchdog
     fi
 }
 
@@ -410,18 +475,19 @@ function displayMenu(){
     # Menu for selecting run mode
     echo -e "\e[1;33m"
     cat << "EOF"
- --------------------
-|   Select Run Mode  |
- --------------------
+=====================
+   Select Run Mode  
+=====================
 EOF
     
-    echo -e "\e[0;37m"
-    echo -e "1 - Collect live data (\e[1;31mNow\e[0m)"
-    echo -e "2 - Collect data when resource utilization is high (\e[1;31mTriggered by High CPU, Memory, or Disk IO\e[0m)"
-    echo -e "3 - Collect data on a specific time (\e[1;31mSetup a cronjob\e[0m)"
+    echo -e "\033[1;34m===================================================================================\033[0m"
+    echo -e "\033[1;32m1 - Collect live data            \e[1;31m(Now)"
+    echo -e "\033[1;32m2 - Collect data via watchdog    \e[1;31m(Triggered by High CPU, Memory, or Disk IO)"
+    echo -e "\033[1;32m3 - Collect data via cron        \e[1;31m(At a specific time)"
+    echo -e "\033[1;34m===================================================================================\033[0m"
     echo ""
-    read -p "Enter the mode number: " run_mode
-    
+
+    read -p "$(echo -e "\033[1;36mEnter the mode number: \033[0m ")" run_mode
     
     case $run_mode in
         1)
@@ -442,8 +508,6 @@ EOF
     
 }
 
-
-
 # Check for command-line arguments
 if [ "$1" = "--collect-now" ]; then
     if [ -n "$2" ] && [[ "$2" =~ ^[0-9]+$ ]]; then
@@ -453,8 +517,15 @@ if [ "$1" = "--collect-now" ]; then
         echo "Usage: $0 --collect-now <duration in seconds>"
         exit 1
     fi
-    elif [ "$1" = "--watchdog" ]; then
-    resourceWatchdog
+elif [ "$1" = "--watchdog" ]; then
+    if [ $# -eq 7 ]; then
+        runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7"
+    else
+        echo "Usage: $0 --watchdog <monitor_cpu> <monitor_mem> <monitor_io> <cpu_threshold> <mem_threshold> <io_threshold>"
+        exit 1
+    fi
+elif [ "$1" = "--version" ]; then
+    echo "Linux All-in-One Performance Collector, version 1.6"
 else
     motd
 fi

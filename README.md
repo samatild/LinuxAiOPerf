@@ -8,7 +8,7 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 - Report generated directly over Web Application.
 - Fast, simple and user friendly.
 
-## How to Generate Rerpots
+## How to Generate Reports
 ### -> Open Report Generator: [Linux AIO Performance Checker](https://linuxaioperf.matildes.dev/) <-
 ![generate data](assets/uploading_data.gif)
 
@@ -50,11 +50,35 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 
 | Run Mode | What it does | For what occasion |  
 |----------|----------|----------|
-| Collect Live Data  | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
-| Collect Data based on resource utilization (Triggered CPU, Memory, Disk IO)  | It will setup a watchdog that will keep an eye for resource Utilization. In case CPU, Memory or Disk IO is above 80% it will trigger a data collection of 2 minutes. | For when you don't know when the problem is going to happen. | 
-| Collect data on a specific time (cronjob)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user section. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happenss. |
-
+| Collect live data | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
+| Collect data via watchdog (Triggered by High CPU, Memory, or Disk IO) | It will setup a watchdog that will keep an eye for resource Utilization. Auto or Manual modes available | For when you don't know when the problem is going to happen. | 
+| Collect data via cron (At a specific time)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user section. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happenss. |
+ 
    > ⚠️ **Attention:** When running on the 3rd mode (cronjob) the script will create a crontab entry but will not delete it. If you want to delete it you will need to do it manually. Don't forget to restart chronyd service after deleting the crontab entry.
+
+### [Mode] Live Data
+
+```
+1. Live data mode is intended to initiate immediate capture.
+2. User needs to select a duration between 10 seconds and 900 seconds (15min)
+3. Report will be based on current metrics and will not contain historical data.
+```
+### [Mode] Watchdog
+
+```
+1. Watchdog is intended for scenarios when the user doesn't know when the problem is going to happen.
+2. If the user knows what resource is affected , he can decide which resource to monitor.
+3. User can also define a custom Threshold to monitor each resource (eg: 100% of CPU)
+4. Default options will monitor CPU, Memory and Disk activity and will trigger the collection at 80%
+
+```
+### [Mode] Cronjob
+
+```
+1. Cron is intended for scenarios where the user knows at which time the problem is going to happen.
+2. User will be prompted if cronjob needs to be reccurent (every hour, every day) or not.
+3. Cronjob will be setup according to user selection and will run until user deletes the cron entry.
+```
 
 ## Compatibility
 

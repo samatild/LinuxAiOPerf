@@ -276,7 +276,7 @@ function createReport() {
  =====================
 EOF
     
-    echo "Creating tarball and cleaning the thrash."
+    echo "Creating tarball and cleaning the trash."
     # Create the zip file
     zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.tar.gz"
     tar cfz "$zip_filename" "$outputdir"

@@ -213,7 +213,7 @@ function dataCapture() {
     
     # General sysinfo
     cp /etc/os-release $outputdir/
-    df -h >> "$outputdir/df-h.txt"
+    df -ha >> "$outputdir/df-h.txt"
     lsblk -f >> "$outputdir/lsblk-f.txt"
     parted -l 2>/dev/null >> "$outputdir/parted-l.txt"
     pvdisplay >> "$outputdir/pvdisplay.txt"

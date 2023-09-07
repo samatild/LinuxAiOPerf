@@ -232,9 +232,13 @@ function dataCapture() {
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
-    mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
-    pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
-    sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
+    # mpstat, pidstat, and sar should be executed on a subshell
+    (
+        mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
+        pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
+        sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
+        disown %1 %2 %3
+    ) 2>/dev/null
 
     # Repeat cycle every second until end time is reached
     while [[ $remaining_seconds -gt 0 ]]; do

@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.7
-# Date: 04/Sep/2023
+# version: 1.8
+# Date: 07/Sep/2023
 
 function packageValidation(){
 
@@ -165,7 +165,10 @@ function dataCapture() {
     # Output Dir
     outputdir="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck"
     mkdir -p "$outputdir"
-    
+
+    # Ensure all files are created before appending contents
+    touch $outputdir/date.txt $outputdir/df-h.txt $outputdir/free.txt $outputdir/iostat-data.out $outputdir/iotop.txt $outputdir/ls-l-dev-mapper.txt $outputdir/lsblk-f.txt $outputdir/lvdisplay.txt $outputdir/lvs.txt $outputdir/mpstat.txt $outputdir/os-release $outputdir/parted-l.txt $outputdir/pidstat.txt $outputdir/ps.txt $outputdir/pvdisplay.txt $outputdir/pvs.txt $outputdir/sar-load-avg.txt $outputdir/sarnetwork.txt $outputdir/top.txt $outputdir/uptime.txt $outputdir/vgdisplay.txt $outputdir/vgs.txt $outputdir/vmstat-data.out
+
     # Calculate end time
     remaining_seconds=$duration
     
@@ -181,7 +184,10 @@ function dataCapture() {
     
     # Function to check the last package update timestamp on RHEL/CentOS
     check_rhel_last_update() {
-        grep -oP "Installed: \K.*" /var/log/yum.log | tail -1 >> $outputdir/yum-history.txt
+        grep -oP "Installed: \K.*" /var/log/yum.log* 2>/dev/null | tail -1 >> $outputdir/yum-history.txt
+        grep -oP "Installed: \K.*" /var/log/dnf.log* 2>/dev/null | tail -1 >> $outputdir/yum-history.txt
+        echo "yum history" >> $outputdir/yum-history.txt
+        yum history >> $outputdir/yum-history.txt
     }
     
     # Determine the Linux distribution
@@ -210,7 +216,7 @@ function dataCapture() {
     
     # General sysinfo
     cp /etc/os-release $outputdir/
-    df -h >> "$outputdir/df-h.txt"
+    df -ha >> "$outputdir/df-h.txt"
     lsblk -f >> "$outputdir/lsblk-f.txt"
     parted -l 2>/dev/null >> "$outputdir/parted-l.txt"
     pvdisplay >> "$outputdir/pvdisplay.txt"
@@ -226,9 +232,13 @@ function dataCapture() {
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
-    mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
-    pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
-    sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
+    # mpstat, pidstat, and sar should be executed on a subshell
+    (
+        mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
+        pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
+        sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
+        disown %1 %2 %3
+    ) 2>/dev/null
 
     # Repeat cycle every second until end time is reached
     while [[ $remaining_seconds -gt 0 ]]; do
@@ -273,7 +283,7 @@ function createReport() {
  =====================
 EOF
     
-    echo "Creating tarball and cleaning the thrash."
+    echo "Creating tarball and cleaning the trash."
     # Create the zip file
     zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.tar.gz"
     tar cfz "$zip_filename" "$outputdir"

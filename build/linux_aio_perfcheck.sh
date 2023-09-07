@@ -538,7 +538,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.7"
+    echo "Linux All-in-One Performance Collector, version 1.8"
 else
     motd
 fi

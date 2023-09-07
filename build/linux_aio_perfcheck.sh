@@ -184,7 +184,10 @@ function dataCapture() {
     
     # Function to check the last package update timestamp on RHEL/CentOS
     check_rhel_last_update() {
-        grep -oP "Installed: \K.*" /var/log/yum.log | tail -1 >> $outputdir/yum-history.txt
+        grep -oP "Installed: \K.*" /var/log/yum.log* 2>/dev/null | tail -1 >> $outputdir/yum-history.txt
+        grep -oP "Installed: \K.*" /var/log/dnf.log* 2>/dev/null | tail -1 >> $outputdir/yum-history.txt
+        echo "yum history" >> $outputdir/yum-history.txt
+        yum history >> $outputdir/yum-history.txt
     }
     
     # Determine the Linux distribution

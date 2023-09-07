@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.7
-# Date: 04/Sep/2023
+# version: 1.8
+# Date: 07/Sep/2023
 
 function packageValidation(){
 
@@ -165,7 +165,10 @@ function dataCapture() {
     # Output Dir
     outputdir="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck"
     mkdir -p "$outputdir"
-    
+
+    # Ensure all files are created before appending contents
+    touch $outputdir/date.txt $outputdir/df-h.txt $outputdir/free.txt $outputdir/iostat-data.out $outputdir/iotop.txt $outputdir/ls-l-dev-mapper.txt $outputdir/lsblk-f.txt $outputdir/lvdisplay.txt $outputdir/lvs.txt $outputdir/mpstat.txt $outputdir/os-release $outputdir/parted-l.txt $outputdir/pidstat.txt $outputdir/ps.txt $outputdir/pvdisplay.txt $outputdir/pvs.txt $outputdir/sar-load-avg.txt $outputdir/sarnetwork.txt $outputdir/top.txt $outputdir/uptime.txt $outputdir/vgdisplay.txt $outputdir/vgs.txt $outputdir/vmstat-data.out
+
     # Calculate end time
     remaining_seconds=$duration
     

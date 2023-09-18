@@ -1,6 +1,13 @@
 # Linux AIO Performance Checker
 
+<p float="left">
+
+  <img src="assets/linuxaiologo.png" />
+
+</p>
+
 Linux AIO Performance Checker is a web application built with Flask that allows you to upload and process ZIP files containing performance data for analysis. It provides an intuitive interface to upload report files, extract their contents, execute performance analysis scripts, and view generated reports.
+
 
 ## Key Features
 
@@ -8,44 +15,37 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 - Report generated directly over Web Application.
 - Fast, simple and user friendly.
 
-## How to Generate Reports
-### -> Open Report Generator: [Linux AIO Performance Checker](https://linuxaioperf.matildes.dev/) <-
-![generate data](assets/uploading_data.gif)
+## Quick Start (Instructions)
 
+1. Directly download script from this github page and execute it
 
-
-## How to Collect Data (Capture)
-
-![how to collect data](assets/collecting_data.gif)
-
-1. You will need first to collect data from a Linux system using the collector: [Download Latest Release](https://github.com/samatild/LinuxAiOPerf/releases/latest) 
+   ```bash
+    # Download
+    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.9/linux_aio_perfcheck.tgz
     
-    Download it, and place it on the Linux system you want to collect data from.
-    
-    Example:
-     ```bash
-    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.8/linux_aio_perfcheck.tgz
+    # Extract
     tar xfz linux_aio_perfcheck.tgz
-     ```
 
-2. Once uploaded to the Linux system, make it executable by running the following command:
-
-   ```bash
+    # Make it executable
     chmod +x linux_aio_perfcheck.sh
-    ```
+   
+    # Run it
+    sudo ./linux_aio_perfcheck.sh
 
-3. Execute the script as root:
+    # Upload the ZIP file to the web application (see bellow)
+      ```
 
-   ```bash
-    sudo ./linux_aio_perfcheck.sh 
-    # Note: the script will ask you to enter the desired time interval for data collection The minimum time interval is 10 seconds. The maximum time interval is 900 seconds (15 minutes)
-    ```
 
-    > ⚠️ **Warning:** sysstat and iotop packages are required for the script to execute. If packages are not installed the script will prompt user to install them. If user disagrees the script will exit.
 
-4. The script will collect performance data and generate a ZIP file containing the collected data. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
+2. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
 
-## 🌟 Run Modes (New)
+
+## Requirements
+
+⚠️ **Packages:** sysstat and iotop packages are required for the script to execute. If they are not installed, the script will install them automatically. If the script is not able to install them, it will exit with an error message.
+
+
+## Run Modes
 
 
 | Run Mode | What it does | For what occasion |  
@@ -68,8 +68,8 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 ```
 1. Watchdog is intended for scenarios when the user doesn't know when the problem is going to happen.
 2. If the user knows what resource is affected , he can decide which resource to monitor.
-3. User can also define a custom Threshold to monitor each resource (eg: 100% of CPU)
-4. Default options will monitor CPU, Memory and Disk activity and will trigger the collection at 80%
+3. User can also define a custom Threshold to monitor each resource (eg: 100% of CPU). On this mode, the user can select the duration of the collection between 1 and 300 seconds.
+4. Default options will monitor CPU, Memory and Disk activity and will trigger the collection at 80% with the default duration of 60 seconds.
 
 ```
 ### [Mode] Cronjob
@@ -95,13 +95,6 @@ It as been tested with the following Linux distributions:
 - SUSE Linux Enterprise Server 15
 - SUSE Linux Enterprise Server 12
 
-## Interpreting Reports
-
-Work in progress... (will be updated soon with items below)
-
-1. Report Overview
-2. Understanding the metrics
-3. Cross-referencing metrics with attached logs
 
 ## What data is collected?
 
@@ -119,15 +112,15 @@ The following data is collected:
 
 ## Data privacy
 
-The data collected is not stored on the web server. The data is stored in a temporary directory on the web server and is deleted after 10 minutes.
+The uploaded data will not be stored on the web server. The data is stored in a temporary directory on the web server and is deleted after 10 minutes.
 
 Part of the data processing requires the execution of JavaScript code on the client-side. The JavaScript code is executed in the browser and does not send any data to the web server.
 
 ## Data Retention Policy
 
-Every report will have its own unique ID. The UID is randomly generated and is not related to the data contained in the report. The UID is used to identify the report and to allow the user to view it. The UID is not stored in the database. The UID is used as the name of the directory where the report is stored.
+Every report will have its own unique ID. The UID is randomly generated and is not related to the data contained in the report. The UID is used to identify the report and to allow the user to view it. The UID is not stored in the database. 
 
-Each time a user uploads a ZIP file containing performance data, the data is stored in a temporary directory on the web server. The data is deleted after 10 minutes.
+Each time a user uploads a ZIP file containing performance data, the data is deleted once report is fully generated. The report HTML file will get deleted after 10 minutes.
 
 ## Credits
 

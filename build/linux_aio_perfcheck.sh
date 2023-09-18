@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.8
-# Date: 07/Sep/2023
+# version: 1.9
+# Date: 18/Sep/2023
 
 function packageValidation(){
 
@@ -39,7 +39,7 @@ EOF
             apt-get update >/dev/null 2>&1
             apt-get install -y "$package_name" >/dev/null 2>&1
             elif [[ "$package_manager" == "zypper" ]]; then
-            echo "Using zypper, please be patient...it may take a while"
+            echo "Using zypper, please be patient.. .it may take a while"
             zypper --non-interactive install "$package_name" >/dev/null 2>&1
             elif [[ "$package_manager" == "yum" ]]; then
             yum -y install "$package_name" >/dev/null 2>&1
@@ -538,7 +538,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.8"
+    echo "Linux All-in-One Performance Collector, version 1.9"
 else
     motd
 fi

@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.8
-# Date: 07/Sep/2023
+# version: 1.9
+# Date: 18/Sep/2023
 
 function packageValidation(){
 
@@ -39,7 +39,7 @@ EOF
             apt-get update >/dev/null 2>&1
             apt-get install -y "$package_name" >/dev/null 2>&1
             elif [[ "$package_manager" == "zypper" ]]; then
-            echo "Using zypper, please be patient...it may take a while"
+            echo "Using zypper, please be patient.. .it may take a while"
             zypper --non-interactive install "$package_name" >/dev/null 2>&1
             elif [[ "$package_manager" == "yum" ]]; then
             yum -y install "$package_name" >/dev/null 2>&1
@@ -126,10 +126,10 @@ function motd(){
     echo -e "\e[1;34m"
     cat << "EOF"
 
-  ================================
-||      Linux All-in-One        ||
-||   Performance Collector      ||
-================================
+===============================
+      Linux All-in-One        
+   Performance Collector      
+===============================
 * Unlocking advanced Linux metrics for humans *
 EOF
     packageValidation
@@ -360,12 +360,13 @@ setupResourceWatchdog() {
     local cpu_threshold=80
     local mem_threshold=80
     local io_threshold=80
+    local duration=60
 
     echo -e "\033[1;34m=====================================================================\033[0m"
     echo -e "\033[1;32mChoose a mode for the Resource Watchdog:\033[0m"
     echo -e "\033[1;34m=====================================================================\033[0m"
-    echo -e "\033[1;36m1 - Auto   \033[0m: Monitor CPU, memory, and disk at 80% Threshold"
-    echo -e "\033[1;36m2 - Manual \033[0m: Choose resources and Threshold to monitor"
+    echo -e "\033[1;36m1 - Auto   \033[0m: Monitor CPU, memory, and disk at 80% Threshold. Duration: 60sec"
+    echo -e "\033[1;36m2 - Manual \033[0m: Choose resources and Thresholds. Duration: 1-300sec"
     echo -e "\033[1;34m=====================================================================\033[0m"
     read -p "$(echo -e "\033[1;33mEnter 1 or 2: \033[0m")" mode
 
@@ -400,6 +401,22 @@ setupResourceWatchdog() {
             monitor_io=1
             read -p "$(echo -e "\033[1;33mSet Disk IO threshold (0-100):\033[0m ")" io_threshold
         fi
+    
+        while true; do
+            read -p "$(echo -e "\033[1;36mDuration (1-300sec): \033[0m ")" duration
+
+            # Check if the input is an integer
+            if [[ "$duration" =~ ^[0-9]+$ ]]; then
+                # Check if the input is between 0 and 300
+                if [ "$duration" -ge 1 ] && [ "$duration" -le 300 ]; then
+                break
+                else
+                echo -e "\033[1;31mInvalid input: Please enter a value between 1 and 300.\033[0m"
+                fi
+            else
+                echo -e "\033[1;31mInvalid input: Please enter an integer.\033[0m"
+            fi
+        done
         
         echo -e "\033[1;34m============================================\033[0m"
     
@@ -410,9 +427,10 @@ setupResourceWatchdog() {
         cpu_threshold=80
         mem_threshold=80
         io_threshold=80
+        duration=60
     fi
 
-    $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" &
+    $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &
     
 }
 
@@ -424,7 +442,9 @@ runResourceWatchdog() {
     local cpu_threshold=$4
     local mem_threshold=$5
     local io_threshold=$6
+    local duration=$7
     local LOG_FILE=$(pwd)/.resource_watchdog_log
+
 
     echo -e "\033[1;34mResource watchdog started. \033[1;32mPID: $$\033[0m"
 
@@ -461,7 +481,7 @@ runResourceWatchdog() {
 
         if (( $(echo "$cpu_util > $cpu_threshold" | bc -l) == 1 || $(echo "$mem_util > $mem_threshold" | bc -l) == 1 || $highIO == 1 )); then
             echo "$(date '+%Y-%m-%d %H:%M:%S ')Resource utilization above thresholds. Running Collector" >> "$LOG_FILE"
-            $(pwd)/linux_aio_perfcheck.sh --collect-now 60
+            $(pwd)/linux_aio_perfcheck.sh --collect-now $duration
             exit 1
         fi
         sleep 5
@@ -473,7 +493,6 @@ function displayDisclaimer() {
     echo -e "\e[1;33m"
     echo "WARNING: Setting up a resource watchdog will run a separate process in the background."
     echo "This process will monitor CPU, memory, and disk IO utilization."
-    echo "If any of these exceed 80%, a script will be triggered."
     echo -e "Do you agree to continue? (y/n) \e[0m"
     read -r choice
     if [[ "$choice" != [Yy] ]]; then
@@ -531,14 +550,14 @@ if [ "$1" = "--collect-now" ]; then
         exit 1
     fi
 elif [ "$1" = "--watchdog" ]; then
-    if [ $# -eq 7 ]; then
-        runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7"
+    if [ $# -eq 8 ]; then
+        runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     else
         echo "Usage: $0 --watchdog <monitor_cpu> <monitor_mem> <monitor_io> <cpu_threshold> <mem_threshold> <io_threshold>"
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.8"
+    echo "Linux All-in-One Performance Collector, version 1.9"
 else
     motd
 fi

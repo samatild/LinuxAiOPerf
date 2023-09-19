@@ -224,7 +224,7 @@ function dataCapture() {
     lvdisplay >> "$outputdir/lvdisplay.txt"
     pvs >> "$outputdir/pvs.txt"
     vgs >> "$outputdir/vgs.txt"
-    lvs >> "$outputdir/lvs.txt"
+    lvs -a -o +devices,stripes,stripe_size,segtype >> "$outputdir/lvs.txt"
     ls -l /dev/mapper/* >> "$outputdir/ls-l-dev-mapper.txt"
     
     # Perf captures

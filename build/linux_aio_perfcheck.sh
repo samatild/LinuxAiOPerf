@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.9
-# Date: 18/Sep/2023
+# version: 1.10
+# Date: 19/Sep/2023
 
 function packageValidation(){
 
@@ -557,7 +557,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.9"
+    echo "Linux All-in-One Performance Collector, version 1.10"
 else
     motd
 fi

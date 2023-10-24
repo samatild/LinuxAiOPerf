@@ -225,7 +225,7 @@ function dataCapture() {
     # Storage info
     df -ha >> "$outputdir/df-h.txt"
     lsblk -f >> "$outputdir/lsblk-f.txt"
-    parted -l 2>/dev/null >> "$outputdir/parted-l.txt"
+    parted --script -l 2>&1 >> "$outputdir/parted-l.txt"
     pvdisplay >> "$outputdir/pvdisplay.txt"
     vgdisplay >> "$outputdir/vgdisplay.txt"
     lvdisplay >> "$outputdir/lvdisplay.txt"

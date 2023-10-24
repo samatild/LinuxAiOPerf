@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.10
-# Date: 19/Sep/2023
+# version: 1.11
+# Date: 23/Oct/2023
 
 function packageValidation(){
 
@@ -216,6 +216,13 @@ function dataCapture() {
     
     # General sysinfo
     cp /etc/os-release $outputdir/
+
+    # Hardware info
+    lshw -short >> "$outputdir/lshw.txt"
+    dmidecode >> "$outputdir/dmidecode.txt"
+
+
+    # Storage info
     df -ha >> "$outputdir/df-h.txt"
     lsblk -f >> "$outputdir/lsblk-f.txt"
     parted -l 2>/dev/null >> "$outputdir/parted-l.txt"
@@ -226,7 +233,25 @@ function dataCapture() {
     vgs >> "$outputdir/vgs.txt"
     lvs -a -o +devices,stripes,stripe_size,segtype >> "$outputdir/lvs.txt"
     ls -l /dev/mapper/* >> "$outputdir/ls-l-dev-mapper.txt"
+    lsscsi >> "$outputdir/lsscsi.txt"
+
+    # CPU and memory info
+    lscpu >> "$outputdir/lscpu.txt"
+    cat /proc/meminfo >> "$outputdir/meminfo.txt"
     
+    # Kernel parameters and modules
+    sysctl -a >> "$outputdir/sysctl.txt"
+    lsmod >> "$outputdir/lsmod.txt"
+
+    # SELinux or AppArmor status
+    if command -v sestatus &> /dev/null; then
+        sestatus >> "$outputdir/sestatus.txt"
+    fi
+    if command -v apparmor_status &> /dev/null; then
+        apparmor_status >> "$outputdir/apparmor_status.txt"
+    fi
+
+
     # Perf captures
     echo "Initializing performance capture"
     elapsed_seconds=1
@@ -235,7 +260,12 @@ function dataCapture() {
     # mpstat, pidstat, and sar should be executed on a subshell
     (
         mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
+        # Process stats per CPU
         pidstat -p ALL 1 >> "$outputdir/pidstat.txt" &
+        # Process IO stats
+        pidstat -d 1 >> "$outputdir/pidstat-io.txt" &
+        # Process memory stats
+        pidstat -r 1 >> "$outputdir/pidstat-memory.txt" &
         sar -n DEV 1 >> "$outputdir/sarnetwork.txt" &
         disown %1 %2 %3
     ) 2>/dev/null
@@ -557,7 +587,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.10"
+    echo "Linux All-in-One Performance Collector, version 1.11"
 else
     motd
 fi

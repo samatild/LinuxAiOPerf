@@ -21,19 +21,11 @@ Linux AIO Performance Checker is a web application built with Flask that allows 
 
    ```bash
     # Download
-    wget https://github.com/samatild/LinuxAiOPerf/releases/download/1.10/linux_aio_perfcheck.tgz
+    wget https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/build/linux_aio_perfcheck.sh
     
-    # Extract
-    tar xfz linux_aio_perfcheck.tgz
-
-    # Make it executable
-    chmod +x linux_aio_perfcheck.sh
-   
     # Run it
     sudo ./linux_aio_perfcheck.sh
-
-    # Upload the ZIP file to the web application (see bellow)
-      ```
+   ```
 
 
 
@@ -102,10 +94,10 @@ The following data is collected:
 
 | Resource Type | Collected Data |
 |----------|----------|
-| CPU  | mpstat, pidstat, uptime   |
-| Memory   | vmstat, free   |
-| Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop   |
-| Generic OS information   | date, top, ps -H, sar, os-release, last installed updates |
+| CPU  | mpstat, pidstat, uptime, cpuinfo  |
+| Memory   | vmstat, free, meminfo   |
+| Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop, lsscsi    |
+| Generic OS information   | date, top, ps -H, sar, os-release, last installed updates, sysctl -a, lsmod, selinux/apparmor dettection |
 
 > ✅ **PII Notice:** No Personal, organization, or computer identifiable information is collected.
 

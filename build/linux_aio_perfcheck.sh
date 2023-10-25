@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Linux All-in-one Performance Collector
+# Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
 # version: 1.11
@@ -225,7 +225,7 @@ function dataCapture() {
     # Storage info
     df -ha >> "$outputdir/df-h.txt"
     lsblk -f >> "$outputdir/lsblk-f.txt"
-    parted --script -l 2>&1 >> "$outputdir/parted-l.txt"
+    parted --script -l 2>/dev/null >> "$outputdir/parted-l.txt"
     pvdisplay >> "$outputdir/pvdisplay.txt"
     vgdisplay >> "$outputdir/vgdisplay.txt"
     lvdisplay >> "$outputdir/lvdisplay.txt"

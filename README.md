@@ -6,8 +6,7 @@
 
 </p>
 
-Linux AIO Performance Checker is a web application built with Flask that allows you to upload and process ZIP files containing performance data for analysis. It provides an intuitive interface to upload report files, extract their contents, execute performance analysis scripts, and view generated reports.
-
+Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
 
 ## Key Features
 

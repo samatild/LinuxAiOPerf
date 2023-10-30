@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.11
-# Date: 23/Oct/2023
+# version: 1.20
+# Date: 30/Oct/2023
 
 function packageValidation(){
 

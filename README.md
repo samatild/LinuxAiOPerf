@@ -22,6 +22,9 @@ Linux AIO Performance Checker is a script that collects performance data from a 
     # Download
     wget https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/build/linux_aio_perfcheck.sh
     
+    # Make it executable
+    sudo chmod +x linux_aio_perfcheck.sh
+    
     # Run it
     sudo ./linux_aio_perfcheck.sh
    ```

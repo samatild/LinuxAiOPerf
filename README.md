@@ -16,7 +16,7 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 
 ## Quick Start (Instructions)
 
-| :book: Please consult full instructions on the [USER MANUAL](https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
+| :book: Please consult full instructions on the [USER MANUAL](https://github.com/samatild/LinuxAiOPerf/blob/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
 |-----|
 
 

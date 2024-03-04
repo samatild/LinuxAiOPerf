@@ -16,7 +16,7 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 
 ## Quick Start (Instructions)
 
-| :book: Please consult full instructions on the [USER MANUAL](https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
+| :book: Please consult full instructions on the [USER MANUAL](https://github.com/samatild/LinuxAiOPerf/blob/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
 |-----|
 
 
@@ -40,6 +40,7 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 
 
 ## Requirements
+⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beggining and will provide instructions to the user on how to change it.
 
 ⚠️ **Packages:** sysstat and iotop packages are required for the script to execute. If they are not installed, the script will install them automatically. If the script is not able to install them, it will exit with an error message.
 

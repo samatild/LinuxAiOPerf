@@ -3,8 +3,71 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.21
-# Date: 10/Nov/2023
+# version: 1.30
+# Date: 04/Mar/2024
+     
+
+setLocalInstructions(){
+    clear
+    echo -e "\e[1;33m"
+    cat << "EOF"
+ ==================================================================
+        Instructions on how to update local Time Zone settings 
+ ==================================================================
+EOF
+
+    echo -e "\n\e[0;31m[Linux Generic procedure is]\e[0m"
+    echo -e "\033[1;34m# Check what Language packages we have installed\e[0m"
+    echo -e "locale -a\n"
+    echo -e "\033[1;34m# Install if necesarry\e[0m"
+    echo -e "localedef -i en_US -f UTF-8 en_US.UTF-8\n"
+    echo -e "\033[1;34m# Change LC_TIME to en_US.UTF-8\e[0m"
+    echo -e "localectl set-locale LC_TIME=en_US.UTF-8\n"
+    echo -e "\033[1;34m# Exit your current user session, and re-login\e[0m"
+    echo -e "\033[1;34m# We need to source new locale settings\e[0m\n"
+    echo -e "\033[1;34m# You can revert using same command\e[0m"
+    echo -e "localectl set-locale LC_TIME=<original value>\n"
+    
+    # Exit
+    echo "Once you are done with Time Zone adjustments, re-run the Collector script."
+    echo "Press any key to exit..."
+    read -s -n 1
+    exit 0 
+}
+
+
+localeValidation() {
+
+    CURRENT_LC_TIME=$(locale | grep LC_TIME | cut -d= -f2 | tr -d '"')
+    
+    if [[ "$CURRENT_LC_TIME" != "en_US.UTF-8" && "$CURRENT_LC_TIME" != "C.UTF-8" && "$CURRENT_LC_TIME" != "POSIX" ]]; then
+        echo -e "\n\e[0;31mIncompatible Time Zone Settings!\e[0m"
+        echo -e "\e[0;37mLC_TIME=$CURRENT_LC_TIME\e[0m"
+        echo -e "\n\e[1;33mCompatible LC_TIME formats are: \e[0men_US.UTF-8 ; C.UTF-8 ; POSIX ; "
+        echo -e "\nThe script will now exit. Please change local Time Zone settings manually and then return."
+        read -p "Do you want to see an example on how to change Time Zone settings? (y/n): " choice
+        case "$choice" in
+            [Yy])
+                # Redirect to another script to change locale settings
+                setLocalInstructions
+                ;;
+            [Nn])
+                echo "Quitting without printing the example."
+                echo -e "\e[0m"
+                exit 0
+                ;;
+            *)
+                echo "Invalid choice. Quitting."
+                echo -e "\e[0m"
+                exit 0
+                
+                ;;
+        esac
+    else
+        echo -e "\n\e[0;32mLocal Timezone settings are compatible.\e[0m: $CURRENT_LC_TIME"
+    fi
+}
+
 
 function packageValidation(){
 
@@ -132,7 +195,13 @@ function motd(){
 ===============================
 * Unlocking advanced Linux metrics for humans *
 EOF
+
+    # We always need to validate TZ first
+    localeValidation
+
+    # Validate Packages
     packageValidation
+
 }
 
 # Define the liveData function
@@ -587,7 +656,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.11"
+    echo "Linux All-in-One Performance Collector, version 1.30"
 else
     motd
 fi

@@ -88,10 +88,12 @@ It as been tested with the following Linux distributions:
 
 - Ubuntu 18.04
 - Ubuntu 20.04
-- CentOS 7
-- CentOS 8
 - Red Hat Enterprise Linux 7
 - Red Hat Enterprise Linux 8
+- Oracle Linux 7
+- Oracle Linux 8
+- CentOS 7
+- CentOS 8
 - SUSE Linux Enterprise Server 15
 - SUSE Linux Enterprise Server 12
 

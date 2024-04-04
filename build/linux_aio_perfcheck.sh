@@ -574,7 +574,7 @@ runResourceWatchdog() {
         fi
 
         if [ "$monitor_mem" == "1" ]; then
-            mem_util=$(free | awk '/Mem:/ {print ($3 / $2) * 100}')
+            mem_util=$(free | awk '/Mem:/ {print 100 -(($7 / $2) * 100)}')
             echo "$(date '+%Y-%m-%d %H:%M:%S ')Current Memory Utilization: $mem_util%" >> "$LOG_FILE"
         fi
 

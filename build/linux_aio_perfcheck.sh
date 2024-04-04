@@ -454,10 +454,10 @@ function defineCron() {
         
         # Add the cron job entry for non-recurrent run
         crontab -l > mycron
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration" >> mycron
         crontab mycron
         rm mycron
-        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
+        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration"
     fi
     
     # Restart the chronyd service

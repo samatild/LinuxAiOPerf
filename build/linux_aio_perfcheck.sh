@@ -379,6 +379,12 @@ function dataCapture() {
     pkill mpstat
     pkill pidstat
     pkill sar
+
+    # Log End Time
+    echo "End Time:         $(date)" >> $outputdir/info.txt
+
+    # Log runmode
+    echo "Runtime Info:     $runmode" >> $outputdir/info.txt
     
     echo -e "\e[1;33mCapture Complete.\e[0m"
     createReport

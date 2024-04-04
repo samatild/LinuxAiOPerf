@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.31
-# Date: 03/Apr/2024
+# version: 1.32
+# Date: 04/Apr/2024
      
 
 setLocalInstructions(){
@@ -656,7 +656,7 @@ elif [ "$1" = "--watchdog" ]; then
         exit 1
     fi
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.31"
+    echo "Linux All-in-One Performance Collector, version 1.32"
 else
     motd
 fi

@@ -671,6 +671,16 @@ elif [ "$1" = "--watchdog" ]; then
         echo "Usage: $0 --watchdog <monitor_cpu> <monitor_mem> <monitor_io> <cpu_threshold> <mem_threshold> <io_threshold>"
         exit 1
     fi
+elif [ "$1" = "--runwatchdog" ]; then
+    # Record runmode
+    runmode="Watchdog Data Capture - $2 seconds Monitor_CPU=$3 Monitor_Memory=$4 Monitor_IO=$5 CPU_Threshold=$6 Mem_Threshold=$7 IO_Threshold=$8"
+    # Call dataCapture function with the specified duration
+    dataCapture "$2"
+elif [ "$1" = "--cronjob" ]; then
+    # Record runmode
+    runmode="Cronjob Data Capture - $2 seconds"
+    # Call dataCapture function with the specified duration
+    dataCapture "$2"
 elif [ "$1" = "--version" ]; then
     echo "Linux All-in-One Performance Collector, version 1.32"
 else

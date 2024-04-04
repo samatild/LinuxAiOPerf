@@ -6,6 +6,7 @@
 # version: 1.32
 # Date: 04/Apr/2024
      
+runmode="null"
 
 setLocalInstructions(){
     clear

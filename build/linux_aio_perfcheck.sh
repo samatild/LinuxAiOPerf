@@ -596,7 +596,7 @@ runResourceWatchdog() {
 
         if (( $(echo "$cpu_util > $cpu_threshold" | bc -l) == 1 || $(echo "$mem_util > $mem_threshold" | bc -l) == 1 || $highIO == 1 )); then
             echo "$(date '+%Y-%m-%d %H:%M:%S ')Resource utilization above thresholds. Running Collector" >> "$LOG_FILE"
-            $(pwd)/linux_aio_perfcheck.sh --collect-now $duration
+            $(pwd)/linux_aio_perfcheck.sh --runwatchdog $duration $monitor_cpu $monitor_mem $monitor_io $cpu_threshold $mem_threshold $io_threshold
             exit 1
         fi
         sleep 5

@@ -222,6 +222,9 @@ EOF
         echo "Invalid duration. Please enter a value between 10 and 900."
         exit 1
     fi
+
+    # Record runmode
+    runmode="Live Data Capture - $duration seconds"
     
     # Call the dataCapture function with the provided duration
     dataCapture $duration

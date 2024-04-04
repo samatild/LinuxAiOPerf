@@ -3,9 +3,10 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.31
-# Date: 03/Apr/2024
+# version: 1.32
+# Date: 04/Apr/2024
      
+runmode="null"
 
 setLocalInstructions(){
     clear
@@ -221,6 +222,9 @@ EOF
         echo "Invalid duration. Please enter a value between 10 and 900."
         exit 1
     fi
+
+    # Record runmode
+    runmode="Live Data Capture - $duration seconds"
     
     # Call the dataCapture function with the provided duration
     dataCapture $duration
@@ -236,7 +240,13 @@ function dataCapture() {
     mkdir -p "$outputdir"
 
     # Ensure all files are created before appending contents
-    touch $outputdir/date.txt $outputdir/df-h.txt $outputdir/free.txt $outputdir/iostat-data.out $outputdir/iotop.txt $outputdir/ls-l-dev-mapper.txt $outputdir/lsblk-f.txt $outputdir/lvdisplay.txt $outputdir/lvs.txt $outputdir/mpstat.txt $outputdir/os-release $outputdir/parted-l.txt $outputdir/pidstat.txt $outputdir/ps.txt $outputdir/pvdisplay.txt $outputdir/pvs.txt $outputdir/sar-load-avg.txt $outputdir/sarnetwork.txt $outputdir/top.txt $outputdir/uptime.txt $outputdir/vgdisplay.txt $outputdir/vgs.txt $outputdir/vmstat-data.out $outputdir/lshw.txt $outputdir/dmidecode.txt $outputdir/lsscsi.txt $outputdir/lscpu.txt $outputdir/meminfo.txt $outputdir/sysctl.txt $outputdir/lsmod.txt $outputdir/pidstat-io.txt $outputdir/pidstat-memory.txt $outputdir/sestatus.txt $outputdir/apparmor_status.txt
+    touch $outputdir/info.txt $outputdir/date.txt $outputdir/df-h.txt $outputdir/free.txt $outputdir/iostat-data.out $outputdir/iotop.txt $outputdir/ls-l-dev-mapper.txt $outputdir/lsblk-f.txt $outputdir/lvdisplay.txt $outputdir/lvs.txt $outputdir/mpstat.txt $outputdir/os-release $outputdir/parted-l.txt $outputdir/pidstat.txt $outputdir/ps.txt $outputdir/pvdisplay.txt $outputdir/pvs.txt $outputdir/sar-load-avg.txt $outputdir/sarnetwork.txt $outputdir/top.txt $outputdir/uptime.txt $outputdir/vgdisplay.txt $outputdir/vgs.txt $outputdir/vmstat-data.out $outputdir/lshw.txt $outputdir/dmidecode.txt $outputdir/lsscsi.txt $outputdir/lscpu.txt $outputdir/meminfo.txt $outputdir/sysctl.txt $outputdir/lsmod.txt $outputdir/pidstat-io.txt $outputdir/pidstat-memory.txt $outputdir/sestatus.txt $outputdir/apparmor_status.txt
+
+    # Log Hostname
+
+    echo "Hostname:         $(hostname)" >> $outputdir/info.txt
+    # Log Start Time
+    echo "Start Time:       $(date)" >> $outputdir/info.txt
 
     # Calculate end time
     remaining_seconds=$duration
@@ -369,6 +379,12 @@ function dataCapture() {
     pkill mpstat
     pkill pidstat
     pkill sar
+
+    # Log End Time
+    echo "End Time:         $(date)" >> $outputdir/info.txt
+
+    # Log runmode
+    echo "Runtime Info:     $runmode" >> $outputdir/info.txt
     
     echo -e "\e[1;33mCapture Complete.\e[0m"
     createReport
@@ -438,10 +454,10 @@ function defineCron() {
         
         # Add the cron job entry for non-recurrent run
         crontab -l > mycron
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration" >> mycron
         crontab mycron
         rm mycron
-        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
+        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration"
     fi
     
     # Restart the chronyd service
@@ -558,7 +574,7 @@ runResourceWatchdog() {
         fi
 
         if [ "$monitor_mem" == "1" ]; then
-            mem_util=$(free | awk '/Mem:/ {print ($3 / $2) * 100}')
+            mem_util=$(free | awk '/Mem:/ {print 100 -(($7 / $2) * 100)}')
             echo "$(date '+%Y-%m-%d %H:%M:%S ')Current Memory Utilization: $mem_util%" >> "$LOG_FILE"
         fi
 
@@ -580,7 +596,7 @@ runResourceWatchdog() {
 
         if (( $(echo "$cpu_util > $cpu_threshold" | bc -l) == 1 || $(echo "$mem_util > $mem_threshold" | bc -l) == 1 || $highIO == 1 )); then
             echo "$(date '+%Y-%m-%d %H:%M:%S ')Resource utilization above thresholds. Running Collector" >> "$LOG_FILE"
-            $(pwd)/linux_aio_perfcheck.sh --collect-now $duration
+            $(pwd)/linux_aio_perfcheck.sh --runwatchdog $duration $monitor_cpu $monitor_mem $monitor_io $cpu_threshold $mem_threshold $io_threshold
             exit 1
         fi
         sleep 5
@@ -655,8 +671,18 @@ elif [ "$1" = "--watchdog" ]; then
         echo "Usage: $0 --watchdog <monitor_cpu> <monitor_mem> <monitor_io> <cpu_threshold> <mem_threshold> <io_threshold>"
         exit 1
     fi
+elif [ "$1" = "--runwatchdog" ]; then
+    # Record runmode
+    runmode="Watchdog Data Capture - $2 seconds Monitor_CPU=$3 Monitor_Memory=$4 Monitor_IO=$5 CPU_Threshold=$6 Mem_Threshold=$7 IO_Threshold=$8"
+    # Call dataCapture function with the specified duration
+    dataCapture "$2"
+elif [ "$1" = "--cronjob" ]; then
+    # Record runmode
+    runmode="Cronjob Data Capture - $2 seconds"
+    # Call dataCapture function with the specified duration
+    dataCapture "$2"
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.31"
+    echo "Linux All-in-One Performance Collector, version 1.32"
 else
     motd
 fi

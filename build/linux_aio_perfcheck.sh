@@ -41,7 +41,7 @@ localeValidation() {
 
     CURRENT_LC_TIME=$(locale | grep LC_TIME | cut -d= -f2 | tr -d '"')
     
-    if [[ "$CURRENT_LC_TIME" != "en_US.UTF-8" && "$CURRENT_LC_TIME" != "C.UTF-8" && "$CURRENT_LC_TIME" != "POSIX" ]]; then
+    if [[ "$CURRENT_LC_TIME" != "en_US.UTF-8" && "$CURRENT_LC_TIME" != "C.UTF-8" && "$CURRENT_LC_TIME" != "POSIX" && "$CURRENT_LC_TIME" != "en_GB.UTF-8" ]]; then
         echo -e "\n\e[0;31mIncompatible Time Zone Settings!\e[0m"
         echo -e "\e[0;37mLC_TIME=$CURRENT_LC_TIME\e[0m"
         echo -e "\n\e[1;33mCompatible LC_TIME formats are: \e[0men_US.UTF-8 ; C.UTF-8 ; POSIX ; "

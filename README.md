@@ -70,7 +70,9 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 2. If the user knows what resource is affected , he can decide which resource to monitor.
 3. User can also define a custom Threshold to monitor each resource (eg: 100% of CPU). On this mode, the user can select the duration of the collection between 1 and 300 seconds.
 4. Default options will monitor CPU, Memory and Disk activity and will trigger the collection at 80% with the default duration of 60 seconds.
-
+5. Watchdog will log its activity on a file located in current working dir named LinuxAiO_watchdog_$(date +'%Y%m%d_%H%M%S').log
+6. Watchdog will automatically restart itself every hour for regular housekeeping.
+7. Watchdog will run until user stops it or threshold is reached.
 ```
 ### [Mode] Cronjob
 

@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.32
-# Date: 04/Apr/2024
+# version: 1.33
+# Date: 10/May/2024
      
 runmode="null"
 
@@ -558,9 +558,10 @@ runResourceWatchdog() {
     local mem_threshold=$5
     local io_threshold=$6
     local duration=$7
-    local LOG_FILE=$(pwd)/.resource_watchdog_log
-
-
+    local LOG_FILE=$(pwd)/LinuxAiO_watchdog_$(date +'%Y%m%d_%H%M%S').log
+    local start_time=$(date +%s)
+    local reset_interval=3600 # 1 Hour
+  
     echo -e "\033[1;34mResource watchdog started. \033[1;32mPID: $$\033[0m"
 
     while true; do
@@ -599,6 +600,18 @@ runResourceWatchdog() {
             $(pwd)/linux_aio_perfcheck.sh --runwatchdog $duration $monitor_cpu $monitor_mem $monitor_io $cpu_threshold $mem_threshold $io_threshold
             exit 1
         fi
+        
+        # Check if 1 hour has passed
+        local current_time=$(date +%s)
+        local elapsed_time=$((current_time - start_time))
+
+        if [ $elapsed_time -ge $reset_interval ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S ')One hour has passed. Exiting." >> $LOG_FILE
+            $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &    
+            find . -maxdepth 1 -type f -name "LinuxAiO_watchdog_*.log" -mmin +121 -exec rm -f {} \;
+            exit 0
+        fi
+
         sleep 5
     done
 }

@@ -461,9 +461,9 @@ function defineCron() {
     fi
     
     # Restart the chronyd service
-    echo "Restarting chronyd service..."
-    systemctl restart chronyd
-    echo "chronyd service restarted."
+    echo "Restarting cron service..."
+    systemctl restart cron
+    echo "cron service restarted."
 }
 
 # Setup Watchdog 

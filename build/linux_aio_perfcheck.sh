@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.33
-# Date: 10/May/2024
+# version: 1.40.0
+# Date: 06/Dec/2024
      
 runmode="null"
 
@@ -336,6 +336,8 @@ function dataCapture() {
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
+    iotop -btd 1 >> "$outputdir/iotop.txt" &
+
     # mpstat, pidstat, and sar should be executed on a subshell
     (
         mpstat -P ALL 1 >> "$outputdir/mpstat.txt" &
@@ -363,9 +365,6 @@ function dataCapture() {
         top -b -n 1 >> "$outputdir/top.txt"
         ps H -eo user,pid,ppid,start_time,%cpu,%mem,wchan,cmd --sort=%cpu >> "$outputdir/ps.txt"
         sar -q 0 >> "$outputdir/sar-load-avg.txt"
-        # iotop output (we log data because iotop doesn't keep a timestamp)
-        date >> "$outputdir/iotop.txt"
-        iotop -b -n 1 >> "$outputdir/iotop.txt"
         
         # Sleep for 1 second
         sleep 1
@@ -379,6 +378,7 @@ function dataCapture() {
     pkill mpstat
     pkill pidstat
     pkill sar
+    pkill iotop
 
     # Log End Time
     echo "End Time:         $(date)" >> $outputdir/info.txt
@@ -695,7 +695,7 @@ elif [ "$1" = "--cronjob" ]; then
     # Call dataCapture function with the specified duration
     dataCapture "$2"
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.32"
+    echo "Linux All-in-One Performance Collector, version 1.40.0"
 else
     motd
 fi

@@ -3,10 +3,13 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.40.0
-# Date: 06/Dec/2024
+# version: 1.41.0
+# Date: 11/Dec/2024
      
 runmode="null"
+
+# Declare a global variable for High Resolution Disk metrics
+high_res_disk_metrics="OFF"
 
 setLocalInstructions(){
     clear
@@ -227,11 +230,35 @@ EOF
     runmode="Live Data Capture - $duration seconds"
     
     # Call the dataCapture function with the provided duration
-    dataCapture $duration
+    dataCapture $duration $high_res_disk_metrics
+}
+# Function to collect high granularity disk statistics
+function collectDiskStats() {
+    echo "Starting High Resolution disk Stats..."
+    local output_dir=$1
+    local duration=$2
+    local output_file="$output_dir/diskstats_log.txt"
+
+    # Write the header line to the output file
+    echo "Timestamp Major Minor Device Reads_Completed Reads_Merged Sectors_Read Time_Reading Writes_Completed Writes_Merged Sectors_Written Time_Writing IO_Currently IO_Time Weighted_IO_Time Discards_Completed Discards_Merged Sectors_Discarded Time_Discarding Flush_Requests Time_Flushing" > "$output_file"
+
+    # Calculate end time
+    local end_time=$((SECONDS + duration))
+
+    # Collect data until duration expires
+    while [ $SECONDS -lt $end_time ]; do
+        cat /proc/diskstats | awk -v ts="$(date '+%Y-%m-%d-%H:%M:%S.%3N')" '
+            $3 ~ /^[a-z]+$/ {print ts, $0}
+        ' >> "$output_file"
+        sleep 0.05
+    done
+    echo "Stopping High Resolution disk Stats..."
 }
 
 function dataCapture() {
     local duration=$1
+    local high_res_disk_metrics=$2
+
     # Inform the user about the collection and duration
     echo "Starting data capture for $duration seconds..."
     
@@ -330,7 +357,11 @@ function dataCapture() {
         apparmor_status >> "$outputdir/apparmor_status.txt"
     fi
 
-
+    # High granularity Disk Usage Capture
+    if [ "$high_res_disk_metrics" = "ON" ]; then
+        collectDiskStats $outputdir $duration  &
+    fi
+    
     # Perf captures
     echo "Initializing performance capture"
     elapsed_seconds=1
@@ -631,6 +662,15 @@ function displayDisclaimer() {
     fi
 }
 
+function toggleHighResDiskMetrics() {
+    if [ "$high_res_disk_metrics" == "OFF" ]; then
+        high_res_disk_metrics="ON"
+    else
+        high_res_disk_metrics="OFF"
+    fi
+    echo "High Resolution Disk Metrics: $high_res_disk_metrics"
+}
+
 function displayMenu(){
     # Menu for selecting run mode
     echo -e "\e[1;33m"
@@ -640,11 +680,13 @@ function displayMenu(){
 =====================
 EOF
     
-    echo -e "\033[1;34m===================================================================================\033[0m"
-    echo -e "\033[1;32m1 - Collect live data            \e[1;31m(Now)"
-    echo -e "\033[1;32m2 - Collect data via watchdog    \e[1;31m(Triggered by High CPU, Memory, or Disk IO)"
-    echo -e "\033[1;32m3 - Collect data via cron        \e[1;31m(At a specific time)"
-    echo -e "\033[1;34m===================================================================================\033[0m"
+    echo -e "\033[1;34m=================================================================================================\033[0m"
+    echo -e "\033[1;32m1 - Collect live data            \e[1;31m                    (Now)"
+    echo -e "\033[1;32m2 - Collect data via watchdog    \e[1;31m                    (Triggered by resource utilization)"
+    echo -e "\033[1;32m3 - Collect data via cron        \e[1;31m                    (At a specific time)"
+    echo -e "\033[1;32m4 - Toggle High Resolution Disk Metrics "
+    echo -e "\033[1;32m    (50ms samples and limited to live data capture)\e[1;35m  (Current: $high_res_disk_metrics)"
+    echo -e "\033[1;34m=================================================================================================\033[0m"
     echo ""
 
     read -p "$(echo -e "\033[1;36mEnter the mode number: \033[0m ")" run_mode
@@ -657,24 +699,29 @@ EOF
             displayDisclaimer
         ;;
         3)
-            
             defineCron
+        ;;
+        4)
+            toggleHighResDiskMetrics
+            clear
+            motd  # Redisplay the menu after toggling
         ;;
         *)
             echo "Invalid mode number."
             exit 1
         ;;
     esac
-    
 }
 
 # Check for command-line arguments
 if [ "$1" = "--collect-now" ]; then
     if [ -n "$2" ] && [[ "$2" =~ ^[0-9]+$ ]]; then
+        # Set $3 to "OFF" if it is null
+        high_res_disk_metrics="${3:-OFF}"
         # Call dataCapture function with the specified duration
-        dataCapture "$2"
+        dataCapture "$2" "$high_res_disk_metrics"
     else
-        echo "Usage: $0 --collect-now <duration in seconds>"
+        echo "Usage: $0 --collect-now <duration in seconds> <ON/OFF for High Resolution Disk Usage>"
         exit 1
     fi
 elif [ "$1" = "--watchdog" ]; then
@@ -695,7 +742,7 @@ elif [ "$1" = "--cronjob" ]; then
     # Call dataCapture function with the specified duration
     dataCapture "$2"
 elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.40.0"
+    echo "Linux All-in-One Performance Collector, version 1.41.0"
 else
     motd
 fi

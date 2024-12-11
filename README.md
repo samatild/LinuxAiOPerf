@@ -8,6 +8,11 @@
 
 Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
 
+## Latest Release
+🎉 **Version 1.41.0** - December 2024
+- New: High resolution disk metrics with 50ms sampling rate for enhanced storage performance analysis
+
+
 ## Key Features
 
 - All-in-one Linux Performance Collector Script.
@@ -21,7 +26,7 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 
 
 
-1. Directly download script from this github page and execute it
+1. **⬇️ Download and execute the script:**
 
    ```bash
     # Download
@@ -36,7 +41,10 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 
 
 
-2. Upload the generated ZIP file to the [Linux AIO Perf Checker Web Application.](https://linuxaioperf.matildes.dev/)
+2. **📤 Upload the generated ZIP file:**
+   > ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
+   > This web interface will process your data and generate an interactive performance report.
+
 
 
 ## Requirements
@@ -108,7 +116,7 @@ The following data is collected:
 |----------|----------|
 | CPU  | mpstat, pidstat, uptime, cpuinfo  |
 | Memory   | vmstat, free, meminfo   |
-| Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop, lsscsi    |
+| Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop, lsscsi, /proc/diskstats    |
 | Generic OS information   | date, top, ps -H, sar, os-release, last installed updates, sysctl -a, lsmod, selinux/apparmor dettection |
 
 > ✅ **PII Notice:** No Personal, organization, or computer identifiable information is collected.

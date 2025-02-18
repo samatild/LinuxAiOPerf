@@ -388,6 +388,7 @@ function dataCapture() {
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
     iotop -btd 1 >> "$outputdir/iotop.txt" &
+    disown
 
     # mpstat, pidstat, and sar should be executed on a subshell
     (

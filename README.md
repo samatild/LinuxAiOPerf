@@ -49,26 +49,16 @@ For detailed documentation and usage instructions, please visit:
 
 Alternatively, the script can be run directly from the command line with various options:
 
+Collect a 30 seconds quick report:
 ```
-=================================================================================================
-Usage: ./linux_aio_perfcheck.sh [OPTIONS] COMMAND
-
-Commands:
-  --quick                     Quick data collection mode
-  --version                   Show version information
-
-Options:
-  -t, --time SECONDS          Duration in seconds (10-900)
-  --high-resolution-disk-counters=VALUE, -hres VALUE
-                              Enable/disable high resolution disk counters (ON/OFF)
-
-Examples:
-  ./linux_aio_perfcheck.sh --quick -t 60 -hres ON
-  ./linux_aio_perfcheck.sh --quick --time 300 --high-resolution-disk-counters=OFF
-
-Note: When run without arguments, the script will start in interactive mode
-=================================================================================================
+./linux_aio_perfcheck.sh --quick -t 30
 ```
+
+Collect a 60 seconds quick report with high resolution disk metrics:
+```
+./linux_aio_perfcheck.sh --quick -t 60 -hres ON
+```
+
 
 ## Requirements
 ⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; en_GB.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beggining and will provide instructions to the user on how to change it.

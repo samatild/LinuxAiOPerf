@@ -9,8 +9,8 @@
 Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
 
 ## Latest Release
-🎉 **Version 1.41.0** - December 2024
-- New: High resolution disk metrics with 50ms sampling rate for enhanced storage performance analysis
+🎉 **Version 1.42.0** - February 2025
+- New: command line interface for quick report collection
 
 
 ## Key Features

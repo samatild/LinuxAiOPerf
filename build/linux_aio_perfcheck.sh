@@ -3,14 +3,34 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.41.0
-# Date: 11/Dec/2024
+# version: 1.42.0
+# Date: 18/Feb/2025
      
 runmode="null"
 
 # Declare a global variable for High Resolution Disk metrics
 high_res_disk_metrics="OFF"
 
+function print_usage() {
+    echo -e "\033[1;34m=================================================================================================\033[0m"
+    echo "Usage: $0 [OPTIONS] COMMAND"
+    echo ""
+    echo -e "\033[1;32mCommands:\033[0m"
+    echo -e "\033[1;32m  --quick                    \033[1;31m Quick data collection mode"
+    echo -e "\033[1;32m  --version                  \033[1;31m Show version information"
+    echo ""
+    echo -e "\033[1;32mOptions:\033[0m"
+    echo -e "\033[1;32m  -t, --time SECONDS         \033[1;31m Duration in seconds (10-900)"
+    echo -e "\033[1;32m  --high-resolution-disk-counters=VALUE, -hres VALUE"
+    echo -e "                             \033[1;31m Enable/disable high resolution disk counters (ON/OFF)"
+    echo ""
+    echo -e "\033[1;32mExamples:\033[0m"
+    echo -e "\033[1;36m  $0 --quick -t 60 -hres ON"
+    echo -e "  $0 --quick --time 300 --high-resolution-disk-counters=OFF\033[0m"
+    echo ""
+    echo -e "\033[1;34mNote: When run without arguments, the script will start in interactive mode\033[0m"
+    echo -e "\033[1;34m=================================================================================================\033[0m"
+}
 setLocalInstructions(){
     clear
     echo -e "\e[1;33m"
@@ -713,36 +733,128 @@ EOF
     esac
 }
 
-# Check for command-line arguments
-if [ "$1" = "--collect-now" ]; then
-    if [ -n "$2" ] && [[ "$2" =~ ^[0-9]+$ ]]; then
-        # Set $3 to "OFF" if it is null
-        high_res_disk_metrics="${3:-OFF}"
-        # Call dataCapture function with the specified duration
-        dataCapture "$2" "$high_res_disk_metrics"
-    else
-        echo "Usage: $0 --collect-now <duration in seconds> <ON/OFF for High Resolution Disk Usage>"
-        exit 1
-    fi
-elif [ "$1" = "--watchdog" ]; then
-    if [ $# -eq 8 ]; then
-        runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
-    else
-        echo "Usage: $0 --watchdog <monitor_cpu> <monitor_mem> <monitor_io> <cpu_threshold> <mem_threshold> <io_threshold>"
-        exit 1
-    fi
-elif [ "$1" = "--runwatchdog" ]; then
-    # Record runmode
-    runmode="Watchdog Data Capture - $2 seconds Monitor_CPU=$3 Monitor_Memory=$4 Monitor_IO=$5 CPU_Threshold=$6 Mem_Threshold=$7 IO_Threshold=$8"
-    # Call dataCapture function with the specified duration
-    dataCapture "$2"
-elif [ "$1" = "--cronjob" ]; then
-    # Record runmode
-    runmode="Cronjob Data Capture - $2 seconds"
-    # Call dataCapture function with the specified duration
-    dataCapture "$2"
-elif [ "$1" = "--version" ]; then
-    echo "Linux All-in-One Performance Collector, version 1.41.0"
+COMMAND=""
+DURATION=""
+HIGH_RES="OFF"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --quick|--collect-now)
+            COMMAND="$1"
+            shift
+            ;;
+        -t|--time)
+            DURATION="$2"
+            shift 2
+            ;;
+        --time=*)
+            DURATION="${1#*=}"
+            shift
+            ;;
+        -hres)
+            HIGH_RES="$2"
+            shift 2
+            ;;
+        --high-resolution-disk-counters=*)
+            HIGH_RES="${1#*=}"
+            shift
+            ;;
+        --watchdog)
+            if [ "$2" = "" ]; then
+                echo "Error: The --watchdog command is for interactive use only."
+                echo "Please use the interactive menu to configure the watchdog."
+                exit 1
+            fi
+            COMMAND="$1"
+            # Store all watchdog parameters
+            if [ $# -ge 8 ]; then
+                WATCHDOG_PARAMS=("$2" "$3" "$4" "$5" "$6" "$7" "$8")
+                shift 8
+            else
+                echo "Error: The --watchdog command is for interactive use only."
+                echo "Please use the interactive menu to configure the watchdog."
+                exit 1
+            fi
+            ;;
+        --runwatchdog)
+            COMMAND="$1"
+            # Store all remaining parameters for dataCapture
+            shift
+            WATCHDOG_TRIGGER_PARAMS=("$@")
+            break  # Exit the parsing loop as we want to keep all remaining args
+            ;;
+        --cronjob)
+            COMMAND="$1"
+            if [ -n "$2" ]; then
+                DURATION="$2"
+                shift 2
+            else
+                echo "Error: --cronjob requires a duration parameter"
+                exit 1
+            fi
+            ;;
+        --version)
+            echo "Linux All-in-One Performance Collector, version 1.42.0"
+            exit 0
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            print_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Validate and execute commands
+if [ -n "$COMMAND" ]; then
+    case $COMMAND in
+        --quick|--collect-now)
+            # Validate duration
+            if [ -z "$DURATION" ] || ! [[ "$DURATION" =~ ^[0-9]+$ ]] || [ "$DURATION" -lt 10 ] || [ "$DURATION" -gt 900 ]; then
+                echo "Error: Duration must be between 10 and 900 seconds"
+                exit 1
+            fi
+            
+            # Validate high resolution setting
+            if [ "$HIGH_RES" != "ON" ] && [ "$HIGH_RES" != "OFF" ]; then
+                echo "Error: High resolution disk counters must be ON or OFF"
+                exit 1
+            fi
+            
+            # Set runmode based on command
+            if [ "$COMMAND" == "--quick" ]; then
+                runmode="Quick Data Capture - $DURATION seconds"
+            else
+                runmode="Interactive (Collect Now) Data Capture - $DURATION seconds"
+            fi
+            
+            # Call dataCapture with validated parameters
+            dataCapture "$DURATION" "$HIGH_RES"
+            ;;
+        --watchdog)
+            if [ -n "${WATCHDOG_PARAMS[*]}" ]; then
+                runResourceWatchdog "${WATCHDOG_PARAMS[@]}"
+            else
+                # Called from interactive menu - all parameters are in $@
+                runResourceWatchdog $@
+            fi
+            ;;
+        --runwatchdog)
+            # Called when watchdog triggers a collection
+            dataCapture "${WATCHDOG_TRIGGER_PARAMS[@]}"
+            ;;
+        --cronjob)
+            # Set runmode for cronjob
+            runmode="Cron Job Data Capture - $DURATION seconds"
+            # Call dataCapture with duration
+            dataCapture "$DURATION" "$HIGH_RES"
+            ;;
+    esac
 else
+    # No command specified, run interactive menu
     motd
 fi

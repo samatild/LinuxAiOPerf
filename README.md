@@ -19,12 +19,12 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 - Report generated directly over Web Application.
 - Fast, simple and user friendly.
 
+## Documentation
+
+For detailed documentation and usage instructions, please visit:
+- 📚 [Project Wiki](https://github.com/samatild/LinuxAiOPerf/wiki)
+
 ## Quick Start (Instructions)
-
-| :book: Please consult full instructions on the [USER MANUAL](https://github.com/samatild/LinuxAiOPerf/blob/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
-|-----|
-
-
 
 1. **⬇️ Download and execute the script:**
 
@@ -45,7 +45,30 @@ Linux AIO Performance Checker is a script that collects performance data from a 
    > ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
    > This web interface will process your data and generate an interactive performance report.
 
+## Command-Line Usage
 
+Alternatively, the script can be run directly from the command line with various options:
+
+```
+=================================================================================================
+Usage: ./linux_aio_perfcheck.sh [OPTIONS] COMMAND
+
+Commands:
+  --quick                     Quick data collection mode
+  --version                   Show version information
+
+Options:
+  -t, --time SECONDS          Duration in seconds (10-900)
+  --high-resolution-disk-counters=VALUE, -hres VALUE
+                              Enable/disable high resolution disk counters (ON/OFF)
+
+Examples:
+  ./linux_aio_perfcheck.sh --quick -t 60 -hres ON
+  ./linux_aio_perfcheck.sh --quick --time 300 --high-resolution-disk-counters=OFF
+
+Note: When run without arguments, the script will start in interactive mode
+=================================================================================================
+```
 
 ## Requirements
 ⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; en_GB.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beggining and will provide instructions to the user on how to change it.

@@ -9,8 +9,8 @@
 Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
 
 ## Latest Release
-🎉 **Version 1.41.0** - December 2024
-- New: High resolution disk metrics with 50ms sampling rate for enhanced storage performance analysis
+🎉 **Version 1.42.0** - February 2025
+- New: command line interface for quick report collection
 
 
 ## Key Features
@@ -19,12 +19,12 @@ Linux AIO Performance Checker is a script that collects performance data from a 
 - Report generated directly over Web Application.
 - Fast, simple and user friendly.
 
+## Documentation
+
+For detailed documentation and usage instructions, please visit:
+- 📚 [Project Wiki](https://github.com/samatild/LinuxAiOPerf/wiki)
+
 ## Quick Start (Instructions)
-
-| :book: Please consult full instructions on the [USER MANUAL](https://github.com/samatild/LinuxAiOPerf/blob/main/LinuxAIO_UserManual_v1.0.0.pdf) ! |
-|-----|
-
-
 
 1. **⬇️ Download and execute the script:**
 
@@ -45,6 +45,19 @@ Linux AIO Performance Checker is a script that collects performance data from a 
    > ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
    > This web interface will process your data and generate an interactive performance report.
 
+## Command-Line Usage
+
+Alternatively, the script can be run directly from the command line with various options:
+
+Collect a 30 seconds quick report:
+```
+./linux_aio_perfcheck.sh --quick -t 30
+```
+
+Collect a 60 seconds quick report with high resolution disk metrics:
+```
+./linux_aio_perfcheck.sh --quick -t 60 -hres ON
+```
 
 
 ## Requirements

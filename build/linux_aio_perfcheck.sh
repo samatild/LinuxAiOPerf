@@ -268,7 +268,7 @@ function collectDiskStats() {
     # Collect data until duration expires
     while [ $SECONDS -lt $end_time ]; do
         cat /proc/diskstats | awk -v ts="$(date '+%Y-%m-%d-%H:%M:%S.%3N')" '
-            $3 ~ /^[a-z]+$/ {print ts, $0}
+            $3 ~ /^sd[a-z]+$/ || $3 ~ /^nvme[0-9]+n[0-9]+$/ {print ts, $0}
         ' >> "$output_file"
         sleep 0.05
     done

@@ -343,7 +343,7 @@ function dataCapture() {
     # General sysinfo
     cp /etc/os-release $outputdir/
 
-    # Hardware info
+    # Hardware Info
     lshw -short 2>/dev/null >> "$outputdir/lshw.txt"
     dmidecode >> "$outputdir/dmidecode.txt"
 

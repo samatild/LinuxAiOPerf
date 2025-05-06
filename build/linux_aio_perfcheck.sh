@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.42.0
-# Date: 18/Feb/2025
+# version: 1.43.0
+# Date: 06/May/2025
      
 runmode="null"
 
@@ -268,7 +268,7 @@ function collectDiskStats() {
     # Collect data until duration expires
     while [ $SECONDS -lt $end_time ]; do
         cat /proc/diskstats | awk -v ts="$(date '+%Y-%m-%d-%H:%M:%S.%3N')" '
-            $3 ~ /^[a-z]+$/ {print ts, $0}
+            $3 ~ /^sd[a-z]+$/ || $3 ~ /^nvme[0-9]+n[0-9]+$/ {print ts, $0}
         ' >> "$output_file"
         sleep 0.05
     done
@@ -343,8 +343,8 @@ function dataCapture() {
     # General sysinfo
     cp /etc/os-release $outputdir/
 
-    # Hardware info
-    lshw -short >> "$outputdir/lshw.txt"
+    # Hardware Info
+    lshw -short 2>/dev/null >> "$outputdir/lshw.txt"
     dmidecode >> "$outputdir/dmidecode.txt"
 
 
@@ -359,7 +359,7 @@ function dataCapture() {
     vgs >> "$outputdir/vgs.txt"
     lvs -a -o +devices,stripes,stripe_size,segtype >> "$outputdir/lvs.txt"
     ls -l /dev/mapper/* >> "$outputdir/ls-l-dev-mapper.txt"
-    lsscsi >> "$outputdir/lsscsi.txt"
+    lsscsi 2>/dev/null >> "$outputdir/lsscsi.txt"
 
     # CPU and memory info
     lscpu >> "$outputdir/lscpu.txt"
@@ -387,7 +387,7 @@ function dataCapture() {
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
-    iotop -btd 1 >> "$outputdir/iotop.txt" &
+    iotop -obtd 1 >> "$outputdir/iotop.txt" &
 
     # mpstat, pidstat, and sar should be executed on a subshell
     (
@@ -794,7 +794,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 1.42.0"
+            echo "Linux All-in-One Performance Collector, version 1.43.0"
             exit 0
             ;;
         -h|--help)

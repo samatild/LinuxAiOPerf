@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.42.0
-# Date: 18/Feb/2025
+# version: 1.43.0
+# Date: 06/May/2025
      
 runmode="null"
 
@@ -794,7 +794,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 1.42.0"
+            echo "Linux All-in-One Performance Collector, version 1.43.0"
             exit 0
             ;;
         -h|--help)

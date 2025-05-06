@@ -344,7 +344,7 @@ function dataCapture() {
     cp /etc/os-release $outputdir/
 
     # Hardware info
-    lshw -short >> "$outputdir/lshw.txt"
+    lshw -short 2>/dev/null >> "$outputdir/lshw.txt"
     dmidecode >> "$outputdir/dmidecode.txt"
 
 
@@ -359,7 +359,7 @@ function dataCapture() {
     vgs >> "$outputdir/vgs.txt"
     lvs -a -o +devices,stripes,stripe_size,segtype >> "$outputdir/lvs.txt"
     ls -l /dev/mapper/* >> "$outputdir/ls-l-dev-mapper.txt"
-    lsscsi >> "$outputdir/lsscsi.txt"
+    lsscsi 2>/dev/null >> "$outputdir/lsscsi.txt"
 
     # CPU and memory info
     lscpu >> "$outputdir/lscpu.txt"

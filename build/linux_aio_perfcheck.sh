@@ -3,8 +3,8 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 1.43.0
-# Date: 06/May/2025
+# version: 1.43.1
+# Date: 30/May/2025
      
 runmode="null"
 
@@ -485,10 +485,10 @@ function defineCron() {
         
         # Add the cron job entry for recurrent run
         crontab -l > mycron
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration" >> mycron
+        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
         crontab mycron
         rm mycron
-        echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now $duration"
+        echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration"
     else
         echo "Enter the exact cron schedule."
         echo "The schedule consists of five fields: minute hour day month day-of-week"
@@ -505,10 +505,10 @@ function defineCron() {
         
         # Add the cron job entry for non-recurrent run
         crontab -l > mycron
-        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration" >> mycron
+        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
         crontab mycron
         rm mycron
-        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --cronjob $duration"
+        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration"
     fi
     
     # Restart the chronyd service
@@ -794,7 +794,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 1.43.0"
+            echo "Linux All-in-One Performance Collector, version 1.43.1"
             exit 0
             ;;
         -h|--help)

@@ -855,6 +855,6 @@ if [ -n "$COMMAND" ]; then
             ;;
     esac
 else
-    # No command specified, run interactive menu
+    # Run interactive menu
     motd
 fi

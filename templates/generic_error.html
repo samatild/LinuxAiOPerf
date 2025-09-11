@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generic Error</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- Placeholder for Image -->
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <img src="{{ url_for('static', filename='generic.jpg') }}" alt="Error Image" class="img-fluid">
+            </div>
+        </div>
+
+        <!-- Alert Box -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Something Went Wrong!</h4>
+                    <p>An unexpected error has occurred.</p>
+                    <p> Report id: {{ reportid }}</p>
+                    <hr>
+
+                    <!-- Guidelines -->
+                    <h5>Guidelines:</h5>
+                    <ul>
+                        <li>Your tarball contents do not match server requirements.</li>
+                        <li>Are you uploading the correct report?</li>
+                        <li>Ensure that you are running the latest version.</li>
+                        <li>Tarball should be generated from the collector script.</li>
+                        <li>Instructions on how to collect data can be found <a href="https://github.com/samatild/LinuxAiOPerf#how-to-collect-data-capture" target="_blank">here</a>.</li>
+                    </ul>
+
+                    <hr>
+                    <a href="/" class="btn btn-primary">Return to Upload Page</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

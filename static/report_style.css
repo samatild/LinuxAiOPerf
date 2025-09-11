@@ -1,0 +1,221 @@
+
+/* Custom CSS styles for modern tabs and dark theme */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+body {
+font-family: 'Roboto', sans-serif;
+background-color: #1c1c1c;
+color: #f1f1f1;
+}
+.title-container {
+display: flex;
+align-items: center;
+justify-content: space-between; /* Align items to the start and end of the container */
+}
+.tab-container {
+    display: flex;
+    flex-direction: column; /* This ensures the child elements are stacked vertically */
+    border: 1px solid #555;
+    background-color: #383838;
+    border-radius: 8px;
+    padding-top: 10px;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+
+.tabs {
+display: flex;
+flex-wrap: wrap;
+
+}
+
+.tab {
+padding: 10px 10px 5px 10px;
+cursor: pointer;
+background-color: #383838;
+border-bottom: 1px solid #555;
+border-top-left-radius: 8px;
+border-top-right-radius: 8px;
+margin-left: 10px;
+}
+
+.subtabs {
+    display: none;
+    flex-direction: row;  /* Display subtabs horizontally */
+}
+
+.subtab {
+    padding: 5px 10px;
+    cursor: pointer;    
+    background-color: #4a4a4a; /* Slightly different shade for subtabs */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-left: 10px;
+    font-size: 0.9em; /* Smaller font for subtabs */
+    margin-top: 5px; /* Spacing between primary tab and subtabs */
+}
+
+.subtab.active {
+    background-color: #6272A4;
+    border-bottom: none;
+}
+
+.subtabs-container {
+    display: flex;
+    flex-direction: row; /* Ensure subtabs are horizontal */
+    justify-content: start;
+    align-items: center;
+    background-color: #383838;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    overflow: hidden;
+    padding: 1px 1px 0px 2px;
+}
+
+.tab.active {
+background-color: #555;
+border-bottom: none;
+}
+
+.tab-content {
+display: none;
+padding: 20px;
+border: 1px solid #555;
+border-top: none;
+border-radius: 0 0 8px 8px;
+background-color: #1c1c1c;
+}
+
+.tab-content.active {
+display: block;
+}
+
+/* Style for the GitHub button */
+.github-button {
+background-color: #4CAF50;
+color: white;
+padding: 10px 20px;
+border: none;
+cursor: pointer;
+border-radius: 5px;
+margin-right: 10px;
+}
+
+
+
+.github-button:hover {
+background-color: #555;
+}
+
+.loading-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.7);
+display: flex;
+justify-content: center;
+align-items: center;
+color: #fff;
+font-size: 24px;
+z-index: 9999;
+}
+.console-output {
+font-family: 'PT Mono', monospace;
+background-color: #222;
+color: #fff;
+padding: 10px;
+border-radius: 5px;
+white-space: pre-line;
+}
+
+.footer {
+padding: 0px 0;
+text-align: center;
+background-color: #383838;
+bottom: 0;
+width: 100%;
+border-radius: 8px;
+}
+
+.footer-content {
+display: flex;
+justify-content: center;
+align-items: center;
+max-width: 800px;
+margin: 0 auto;
+padding: 0 20px;
+}
+
+.footer-content a {
+color: #007bff;
+text-decoration: none;
+transition: color 0.3s;
+margin: 0 10px; /* Add spacing between items */
+}
+
+.footer-content a:hover {
+color: #0056b3;
+}
+
+#collapsible-container {
+position: absolute;
+top: 100px;
+right: 30px;
+z-index: 9998; /* Ensures overlay */
+}
+
+.collapsible-button {
+background-color: rgb(105, 115, 138);
+font-size: 14px;
+color: #F8F8F2;
+cursor: pointer;
+padding: 5px 15px;
+text-align: center;
+border: none;
+outline: none;
+transition: 0.4s;
+border-radius: 5px;
+position: absolute;
+top: -20px;
+right: 0px;
+z-index: 999;
+}
+
+.collapsible-button:hover {
+background-color: #bac;
+}
+
+.collapsible-content {
+padding: 10px 50px 10px 10px;
+overflow: hidden;
+transition: width 0.4s ease-out;
+background-color: rgba(28, 28, 28, 0.8); 
+color: white;
+position: absolute;
+top: 60px;
+right: 0px;
+width: 0;
+height: 800px;
+overflow: scroll;
+overflow-x: hidden;
+display: none; 
+border-radius: 10px; 
+}
+
+.hidden p {
+display: none;
+}
+
+
+.show p {
+display: block;
+}
+
+.legend-item {
+font-family: 'Courier New', monospace;  /* Setting the font to Courier New */
+color: white;
+margin-bottom: 10px;
+}
+

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  linuxaio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: linuxaio-app
+    ports:
+      - "8000:80"
+    environment:
+      - FLASK_ENV=production
+      - WORKERS=4
+      - TIMEOUT=300
+      - UPLOAD_FOLDER=/linuxaio/digest
+    volumes:
+      # Mount upload directory for persistence
+      - linuxaio_uploads:/linuxaio/digest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Security: run as non-root user
+    user: "1000:1000"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  linuxaio_uploads:
+    driver: local

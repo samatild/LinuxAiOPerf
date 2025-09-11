@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<head>
+    <!-- header.script1_placeholder -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
+    <!-- header.script2_placeholder -->
+    <script async defer src="https://buttons.github.io/buttons.js">
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,
+        initial-scale=1.0">
+    <title>Linux All-in-One Performance Report</title>
+</head>
+
+<body>
+    <div class="loading-overlay">Digesting a bazillion counters,
+        Please wait...</div>
+    <div class="title-container">
+        <a href="https://linuxaioperf.matildes.dev/">
+            <img src="/static/images/linuxaiologo.png" alt="sitelogo" style="width: 250px;">
+        </a>
+
+    </div>
+    <div class="tab-container">
+        <div class="tabs">
+            <div class="tab active" id="index-tab" onclick="openSubTabs('substab-overview')">
+                System Configuration</div>
+            <div class="tab" onclick="openSubTabs('substab-perfanalysis')">
+                Performance Analysis</div>
+            <div class="tab" onclick="openSubTabs('substab-processinfo')">
+                Process Information</div>
+            <div class="tab" onclick="openSubTabs('substab-about')">About
+            </div>
+        </div>
+        <div class="subtabs-container">
+            <div class="subtabs" id="substab-overview">
+                <div class="subtab active" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-osinfo')">Information</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-hardwareinfo')">Hardware</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-storage')">Storage</div>
+                
+                <!-- lvm_tab_placeholder -->
+
+                <div class="subtab" onclick="openTab(event, 'subcontent-cpuinfo')">
+                    CPU Info</div>
+                <div class="subtab" onclick="openTab(event, 'subcontent-memoryinfo')">
+                    Memory Info</div>
+                <div class="subtab" onclick="openTab(event, 'subcontent-kernelparam')">
+                    Kernel Parameters</div>
+                <div class="subtab" onclick="openTab(event, 'subcontent-kernelmod')">
+                    Kernel Modules</div>
+                <div class="subtab" onclick="openTab(event, 'subcontent-security')">
+                    Security</div>
+            </div>
+            <div class="subtabs" id="substab-perfanalysis">
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab1')">CPU Load Distribution</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab5')">Memory utilization</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab2')">Disk counters Metrics/Device</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab3')">Disk counters Device/Metrics</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab4')">High Resolution Disk Metrics</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab9')"> Network Statistics</div>
+            </div>
+            <div class="subtabs" id="substab-processinfo">
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab6')">Process stats [CPU]</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event,'subcontent-pidstatio')">Process stats [IO]</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-pidstatmem')">Process stats [Memory]
+                </div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab7')">top</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'tab8')"> iotop</div>
+            </div>
+            <div class="subtabs" id="substab-about">
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-about')">About</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-LICENSE')">License</div>
+            </div>
+        </div>
+        <div id="collapsible-container">
+            <button class="collapsible-button" title="Counters Description">
+                <i class="fas fa-chart-bar"></i>
+            </button>
+            <div class="collapsible-content hidden">
+                <pre id="iostat" data-file="counters.txt"></pre>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="tab-content" id="subcontent-about">
+        <h2>Linux All-in-One Performance Report</h2>
+        <pre>
+Version: 1.43.1
+All-in-one Linux Performance Collector Script.
+Report generated directly over Web Application.
+Fast, simple and user friendly.
+    </pre>
+        <h2>GitHub</h2>
+        <a class="github-button" href="https://github.com/samatild/LinuxAiOPerf" data-icon="octicon-star"
+            aria-label="Star samatild/LinuxAiOPerf on GitHub">Star</a><a class="github-button"
+            href="https://github.com/samatild" aria-label="Follow @samatild on GitHub">Follow @samatild</a>
+    </div>
+
+    <div class="tab-content" id="subcontent-LICENSE">
+        <h2>MIT License</h2>
+
+        <pre>
+Copyright (c) 2023 Samuel Matildes
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+    </pre>
+    </div>
+
+    <div class="tab-content active" id="subcontent-osinfo">
+        <!-- System Configuration - Information -->
+        <!-- sysinfo.runtime_placeholder -->
+        <!-- sysinfo.osinfo_placeholder -->
+
+    </div>
+
+    <div class="tab-content" id="subcontent-hardwareinfo">
+        <!-- System Configuration - Hardware -->
+        <!-- sysinfo.lshw_placeholder -->
+        <!-- sysinfo.dmidecode_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-storage">
+        <!-- System Configuration - Storage -->
+        <!-- sysinfo.lssci_placeholder -->
+        <!-- sysinfo.lsblk_placeholder -->
+        <!-- sysinfo.df_placeholder -->
+        <!-- sysinfo.lsdevmapper_placeholder -->
+        <!-- sysinfo.parted_placeholder -->
+    </div>
+
+        <!-- System Configuration - LVM-->
+        <!-- sysinfo.lvm_placeholder -->
+    
+    <div class="tab-content" id="subcontent-cpuinfo">
+        <!-- System Configuration - CPU Info -->
+        <!-- sysinfo.cpuinfo_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-memoryinfo">
+        <!-- System Configuration - Memory Info -->
+        <!-- sysinfo.meminfo_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-kernelparam">
+        <!-- System Configuration - Kernel Parameters -->
+        <!-- sysinfo.sysctl_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-kernelmod">
+        <!-- System Configuration - Kernel Modules -->
+        <!-- sysinfo.lsmod_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-security">
+        <!-- System Configuration - Security -->
+        <!-- sysinfo.apparmor_placeholder -->
+        <!-- sysinfo.selinux_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab1">
+        <!-- Performance Analysis - CPU Load Distribution -->
+        <!-- perf.mpstat_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab5">
+        <!-- Performance Analysis - Memory Utilization -->
+        <!-- perf.memory_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab2">
+        <!-- Performance Analysis - Disk Metrics/Device -->
+        <!-- perf.iostatpd_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab3">
+        <!-- Performance Analysis - Disk Device/metrics -->
+        <!-- perf.iostatpm_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab4">
+        <!-- Performance Analysis - High Resolution Disk Metrics -->
+        <!-- perf.diskstats_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab9">
+        <!-- Performance Analysis - Network Statistics -->
+        <!-- perf.network_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab6">
+        <!-- Process Information - Process Stats CPU -->
+        <!-- procinfo.pidstat_CPU_placeholder -->
+    </div>
+ 
+    <div class="tab-content" id="subcontent-pidstatio">
+        <!-- Process Information - Process Stats IO -->
+        <!-- procinfo.pidstat_IO_placeholder -->
+    </div>
+    <div class="tab-content" id="subcontent-pidstatmem">
+        <!-- Process Information - Process Stats Memory -->
+        <!-- procinfo.pidstat_mem_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab7">
+        <!-- Process Information - top -->
+        <!-- procinfo.top_placeholder -->
+    </div>
+
+    <div class="tab-content" id="tab8">
+        <!-- Process Information - iotop -->
+        <!-- procinfo.iotop_placeholder -->
+    </div>
+
+
+    <script>
+        // Simulate click event to load index tab
+        document.addEventListener("DOMContentLoaded", function () {
+            var tab = document.getElementById('index-tab');
+            if (tab) {
+                tab.click();
+            }
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <a href="https://github.com/samatild/LinuxAiOPerf" target="_blank">
+                    Linux All-in-One Performance Checker
+                </a>
+                is published under
+                <a href="https://opensource.org/licenses/MIT" target="_blank">
+                    MIT License
+                </a>
+            </div>
+            <div>
+                <!-- footer.version_placeholder -->
+            </div>
+    </footer>
+</body>
+
+</html>

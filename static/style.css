@@ -1,0 +1,172 @@
+body {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;;
+    align-items: center;
+    min-height: 100vh;
+}
+/* New class for vertical centering */
+.vertically-centered {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 60px); /* Adjust for footer */
+}
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center; /* Center-align text within the container */
+}
+
+.title {
+    font-size: 30px;
+    margin-bottom: 20px;
+    margin: 0; /* Remove margin to prevent extra space */
+}
+
+.subtitle {
+    font-size: 24px;
+    margin-bottom: 1px;
+}
+
+.subtitle2 {
+    font-size: 12px;
+    margin-bottom: 10px;
+    font-weight: lighter;
+    color: lightskyblue;
+}
+
+.upload-section {
+    background-color: #333333;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center; /* Center-align content horizontally */
+}
+
+.upload-section.drag-over {
+    background-color: #555555; /* Darker shade of the original background color */
+    border: 2px dashed #ffffff; /* White dashed border */
+}
+
+input[type="file"] {
+    display: none; /* Hide the default input */
+}
+
+.custom-file-input {
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    display: inline-block;
+    margin: 10px;
+}
+
+#selected-file {
+    text-align: center; /* Center-align the selected filename */
+    color: #777; /* Adjust text color if desired */
+    margin-top: 10px; /* Add margin at the top for spacing */
+}
+.custom-file-input:hover {
+    background-color: #0056b3;
+}
+
+button {
+    background-color: #4CAF50;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+button:disabled {
+    background-color: #666666;
+    cursor: not-allowed;
+}
+
+.button-container {
+    text-align: center;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-message {
+    font-size: 24px;
+    color: white;
+}
+
+.footer {
+    background-color: #292b2c;
+    color: #ffffff;
+    padding: 20px 0;
+    text-align: center;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    box-shadow: 0px -4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer-content a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s;
+    margin: 0 10px; /* Add spacing between items */
+    justify-content: space-between; /* This aligns the two divs at each end */
+
+}
+
+.footer-content a:hover {
+    color: #0056b3;
+}
+
+.separator {
+    width: 100%;
+    height: 1px;
+    background-color: #666666;
+    margin: 10px 0;
+}
+
+.centered-image {
+    margin-bottom: 10px;  /* 10px gap between the image and the upload box */
+    left: 50%;
+    max-width: 200px;  /* Limit the width */
+    width: auto;
+    height: auto;
+}
+
+
+

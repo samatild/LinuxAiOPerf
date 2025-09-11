@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Linux AIO Perfomance Checker</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script_dragdrop.js') }}"></script>
+
+</head>
+<body>
+    <div id="loading-overlay" class="overlay">
+        <div class="loading-message">Loading...</div>
+    </div>
+    
+    <div class="vertically-centered">
+        <div class="container">
+            <img src="{{ url_for('static', filename='images/uploadpage.png') }}" alt="Amazing Tux" class="centered-image">
+            <h1 class="title">Linux All-in-One Perfomance Checker</h1>
+            <div class="upload-section" id="upload-section">
+                <h2 class="subtitle">Upload Report</h2>
+                <h2 class="subtitle2">Drag and Drop supported</h2>
+                <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" onsubmit="showLoadingOverlay()">
+                    <div class="button-container">
+                        <label for="file" class="custom-file-input">Choose File</label>
+                        <input type="file" id="file" name="file" onchange="displayFileName()">
+                        <button type="submit" id="upload-button" disabled>Upload</button>
+                    </div>
+                    <div id="selected-file"></div> <!-- Display selected filename below buttons -->
+                </form>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <div class="footer-content">
+            <div>Linux All-in-One Performance Report - WebApp v1.43.1 |</div>
+            <div><a href="https://github.com/samatild/LinuxAiOPerf" target="_blank">About</a></div>
+        </div>
+    </footer>
+</body>
+</html>

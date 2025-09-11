@@ -10,8 +10,8 @@ RUN apt-get update && \
     apt-get install -y graphviz curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy the webapp directory contents into the container at /app
+COPY webapp/ /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \

@@ -19,7 +19,7 @@ from domains.webapp.execution import ScriptExecutor
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = '/linuxaio/digest/'
+UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/linuxaio/digest/')
 SCRIPT_PATH = 'linuxaioperf.py'
 unique_id = None
 

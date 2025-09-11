@@ -2,19 +2,16 @@
 Process CPU statistics processor for pidstat data.
 """
 
-import os
-import logging
-from typing import List, Dict, Any, Tuple
-import json
-
-from core.base import ProcessInfoProcessor, DataProcessorError
-
-
-# NOTE: This module only provides legacy function wrappers for backward compatibility.
-# The class-based processor is not used in the current implementation.
-
-
 # Legacy function wrappers for backward compatibility with generate_html.py
+
+
+# NOTE: This module only provides legacy function wrappers for backward
+# compatibility. The class-based processor is not used in the current
+# implementation.
+
+import os
+
+
 def print_file_contents(file_path):
     """Legacy function wrapper for backward compatibility."""
     if os.path.exists(file_path):

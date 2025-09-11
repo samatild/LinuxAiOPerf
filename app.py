@@ -85,33 +85,36 @@ def upload_file():
             # Initialize domain services
             file_manager = FileManager()
             script_executor = ScriptExecutor()
-            
+
             # Process the uploaded file
             try:
                 unique_id, unique_dir = file_manager.process_upload(
-                    uploaded_file, 
-                    UPLOAD_FOLDER, 
+                    uploaded_file,
+                    UPLOAD_FOLDER,
                     os.path.dirname(__file__)
                 )
-                log_message(f"File processed successfully. Report ID: {unique_id}")
-                
+                log_message(
+                    f"File processed successfully. Report ID: {unique_id}")
             except Exception as e:
                 log_message(f"File processing failed: {e}", "Error")
                 return render_template('bad_gzip_file.html'), 400
-            
+
             # Execute the performance analysis script
             log_message("Executing performance analysis script")
             exit_code = script_executor.execute_linuxaioperf(unique_dir)
-            
+
             if exit_code != 0:
-                log_message(f"Script execution failed with exit code: {exit_code}", "Error")
-                return render_template('generic_error.html', reportid=unique_id), 500
-            
+                log_message(
+                    f"Script execution failed with exit code: {exit_code}",
+                    "Error")
+                return render_template('generic_error.html',
+                                       reportid=unique_id), 500
+
             # Construct the URL for the report page
             log_message("Constructing report URL")
             report_url = url_for('view_report', dir=unique_dir, _external=True)
             log_message(f"Report ID: {unique_id}")
-            
+
             # Redirect the user to the report page
             return redirect(report_url)
 
@@ -119,7 +122,8 @@ def upload_file():
 
     except Exception as e:
         log_message(f"Error: {e}", "Error")
-        reportid = unique_dir.split("/")[-1] if 'unique_dir' in locals() else "unknown"
+        reportid = (unique_dir.split("/")[-1] if 'unique_dir' in locals()
+                    else "unknown")
         return render_template('generic_error.html', reportid=reportid), 500
 
 

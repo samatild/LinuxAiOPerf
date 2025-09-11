@@ -1,19 +1,12 @@
 """
 LVM visualization processor.
 """
-
-import os
-import logging
-from typing import List, Dict, Any, Tuple
-
-from core.base import SystemInfoProcessor, DataProcessorError
-
-
-
-# NOTE: This module only provides legacy function wrappers for backward compatibility.
-# The class-based processor is not used in the current implementation.
-
 # Legacy function wrappers for backward compatibility with generate_html.py
+# NOTE: This module only provides legacy function wrappers for backward
+# compatibility. The class-based processor is not used in the current
+# implementation.
+
+
 def parse_pvs(filename='pvs.txt'):
     """Legacy function wrapper for backward compatibility."""
     pvs = []
@@ -63,11 +56,12 @@ def create_graph(pvs, vgs, lvs):
     """Legacy function wrapper for backward compatibility."""
     from graphviz import Digraph
     import re
-    
+
     def parse_lsblk(filename='lsblk-f.txt'):
         lsblk_data = {}
         lv_pattern = re.compile(
-            r'([a-zA-Z0-9\-]+)\s+(xfs|ext4|vfat)?\s+([a-zA-Z0-9\-]+)?\s+([/\w]+)?')
+            r'([a-zA-Z0-9\-]+)\s+(xfs|ext4|vfat)?\s+'
+            r'([a-zA-Z0-9\-]+)?\s+([/\w]+)?')
 
         with open(filename, 'r') as f:
             for line in f.readlines()[1:]:
@@ -86,11 +80,13 @@ def create_graph(pvs, vgs, lvs):
             for line in f.readlines()[1:]:
                 parts = line.split()
                 if len(parts) >= 6:
-                    filesystem, _, _, avail, use_percent, mountpoint = parts[
-                        0], parts[2], parts[3], parts[3], parts[4], parts[5]
+                    filesystem, _, _, avail, use_percent, mountpoint = (
+                        parts[0], parts[2], parts[3], parts[3],
+                        parts[4], parts[5])
                     lv_name = filesystem.split(
                         '-')[-1] if '-' in filesystem else filesystem
-                    df_data[lv_name] = {'avail': avail, 'use_percent': use_percent}
+                    df_data[lv_name] = {
+                        'avail': avail, 'use_percent': use_percent}
                     # dummy check mountpoint var
                     if mountpoint == '-':
                         continue
@@ -194,7 +190,9 @@ def create_graph(pvs, vgs, lvs):
         return (
             dot.pipe()
             .decode('utf-8')
-            .replace('<?xml version="1.0" encoding="UTF-8" standalone="no"?>', '')
+            .replace(
+                '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+                '')
             .strip()
         )
 
@@ -230,4 +228,3 @@ def create_graph(pvs, vgs, lvs):
 
         svg_list.append(svg_content)
     return svg_list
-

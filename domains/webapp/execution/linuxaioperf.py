@@ -1,7 +1,8 @@
 """
 Linux AIO Performance Checker - Refactored Version
 Author: Samuel Matildes
-Description: Linux AIO Perf Checker HTML report generator using domain-based architecture
+Description: Linux AIO Perf Checker HTML report generator
+using domain-based architecture
 Requirements: Python 3.6 or higher
 Version: 2.0.0
 Date: 15/05/2025
@@ -10,7 +11,7 @@ Date: 15/05/2025
 import os
 import logging
 import datetime
-from typing import Dict, List, Any, Optional
+from typing import List, Any, Optional
 
 from domains.factory import ProcessorFactory
 from domains.htmlgeneration import generate_report
@@ -20,7 +21,7 @@ def setup_logging() -> logging.Logger:
     """Setup logging configuration."""
     logger = logging.getLogger('linuxaioperf')
     logger.setLevel(logging.INFO)
-    
+
     if not logger.handlers:
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
@@ -28,11 +29,12 @@ def setup_logging() -> logging.Logger:
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-    
+
     return logger
 
 
-def log_message(message: str, log_level: str = 'Info', logger: Optional[logging.Logger] = None):
+def log_message(message: str, log_level: str = 'Info',
+                logger: Optional[logging.Logger] = None):
     """Log a message with timestamp."""
     if logger:
         if log_level.lower() == 'error':
@@ -48,23 +50,25 @@ def log_message(message: str, log_level: str = 'Info', logger: Optional[logging.
 
 def print_banner(logger: logging.Logger):
     """Print the script banner."""
-    log_message("===> LINUX AIO PERFORMANCE CHECKER EXECUTION INITIATED", logger=logger)
+    log_message(
+        "===> LINUX AIO PERFORMANCE CHECKER EXECUTION INITIATED",
+        logger=logger)
 
 
 class PerformanceReportGenerator:
     """
     Main class for generating Linux AIO performance reports.
     """
-    
+
     def __init__(self, logger: Optional[logging.Logger] = None):
         self.logger = logger or setup_logging()
         self.processors = {}
         self.results = {}
-    
+
     def process_cpu_data(self) -> List[Any]:
         """Process CPU performance data."""
         self.logger.info("Processing CPU Data")
-        
+
         try:
             processor = ProcessorFactory.create_processor(
                 'cpu', 'mpstat.txt', logger=self.logger
@@ -75,11 +79,11 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process CPU data: {e}")
             return []
-    
+
     def process_disk_data(self) -> tuple[List[Any], List[Any]]:
         """Process disk performance data."""
         self.logger.info("Processing Disk Data 1/2")
-        
+
         # Process per-device disk data
         try:
             processor = ProcessorFactory.create_processor(
@@ -91,9 +95,9 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process disk per-device data: {e}")
             disk_pd_figs = []
-        
+
         self.logger.info("Processing Disk Data 2/2")
-        
+
         # Process per-metric disk data
         try:
             processor = ProcessorFactory.create_processor(
@@ -105,17 +109,18 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process disk per-metric data: {e}")
             disk_pm_figs = []
-        
+
         return disk_pd_figs, disk_pm_figs
-    
+
     def process_diskstats_data(self) -> List[Any]:
         """Process high-resolution disk statistics."""
         self.logger.info("Processing High Resolution Diskstats Data")
-        
+
         if not os.path.exists("diskstats_log.txt"):
-            self.logger.warning("No diskstats_log.txt found, skipping diskstats")
+            self.logger.warning(
+                "No diskstats_log.txt found, skipping diskstats")
             return []
-        
+
         try:
             processor = ProcessorFactory.create_processor(
                 'diskhighres', 'diskstats_log.txt', logger=self.logger
@@ -126,11 +131,11 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process diskstats data: {e}")
             return []
-    
+
     def process_memory_data(self) -> List[Any]:
         """Process memory performance data."""
         self.logger.info("Processing Memory Data")
-        
+
         try:
             processor = ProcessorFactory.create_processor(
                 'memory', 'vmstat-data.out', logger=self.logger
@@ -141,15 +146,15 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process memory data: {e}")
             return []
-    
+
     def process_network_data(self) -> List[Any]:
         """Process network performance data."""
         self.logger.info("Processing Network Data")
-        
+
         if not os.path.exists("sarnetwork.txt"):
             self.logger.warning("No sarnetwork.txt found, skipping network")
             return []
-        
+
         try:
             processor = ProcessorFactory.create_processor(
                 'network', 'sarnetwork.txt', logger=self.logger
@@ -160,17 +165,17 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to process network data: {e}")
             return []
-    
-    def generate_report(self, 
-                       mpstat_figs: List[Any],
-                       iostat_pd_figs: List[Any], 
-                       iostat_pm_figs: List[Any],
-                       vmstat_figs: List[Any],
-                       sarnet_figs: List[Any],
-                       diskstats_figs: List[Any]):
+
+    def generate_report(self,
+                        mpstat_figs: List[Any],
+                        iostat_pd_figs: List[Any],
+                        iostat_pm_figs: List[Any],
+                        vmstat_figs: List[Any],
+                        sarnet_figs: List[Any],
+                        diskstats_figs: List[Any]):
         """Generate the final HTML report."""
         self.logger.info("Generating HTML Report")
-        
+
         try:
             generate_report(
                 mpstat_figs, iostat_pd_figs, iostat_pm_figs,
@@ -180,11 +185,11 @@ class PerformanceReportGenerator:
         except Exception as e:
             self.logger.error(f"Failed to generate HTML report: {e}")
             raise
-    
+
     def run(self):
         """Main execution method."""
         print_banner(self.logger)
-        
+
         try:
             # Process all data types
             mpstat_figs = self.process_cpu_data()
@@ -192,15 +197,15 @@ class PerformanceReportGenerator:
             diskstats_figs = self.process_diskstats_data()
             vmstat_figs = self.process_memory_data()
             sarnet_figs = self.process_network_data()
-            
+
             # Generate final report
             self.generate_report(
                 mpstat_figs, iostat_pd_figs, iostat_pm_figs,
                 vmstat_figs, sarnet_figs, diskstats_figs
             )
-            
+
             self.logger.info("Report generation completed successfully")
-            
+
         except Exception as e:
             self.logger.error(f"Report generation failed: {e}")
             raise

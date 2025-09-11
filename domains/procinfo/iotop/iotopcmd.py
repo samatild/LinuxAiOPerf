@@ -2,19 +2,14 @@
 IOTop command processor for iotop data.
 """
 
-import os
-import logging
-from typing import List, Dict, Any, Tuple
-import json
-
-from core.base import ProcessInfoProcessor, DataProcessorError
-
-
-
-# NOTE: This module only provides legacy function wrappers for backward compatibility.
-# The class-based processor is not used in the current implementation.
-
 # Legacy function wrappers for backward compatibility with generate_html.py
+
+
+# NOTE: This module only provides legacy function wrappers for backward
+# compatibility. The class-based processor is not used in the current
+# implementation.
+
+
 def is_legacy_format(first_line):
     """Check if the file is in the legacy format (starts with full date)"""
     return first_line.startswith(
@@ -81,4 +76,3 @@ def generate_iotop(iotop_input_file):
     chunks_js_object += "}"
 
     return timestamps, chunks_js_object
-

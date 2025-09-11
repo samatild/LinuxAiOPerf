@@ -1,25 +1,16 @@
 """
 Top command processor for top data.
 """
-
-import os
-import logging
-from typing import List, Dict, Any, Tuple
-import json
-
-from core.base import ProcessInfoProcessor, DataProcessorError
-
-
-
-# NOTE: This module only provides legacy function wrappers for backward compatibility.
-# The class-based processor is not used in the current implementation.
-
 # Legacy function wrappers for backward compatibility with generate_html.py
+# NOTE: This module only provides legacy function wrappers for backward
+# compatibility. The class-based processor is not used in the current
+# implementation.
+
+
 def generate_top(top_input_file):
     """Legacy function wrapper for backward compatibility."""
     timestamps = set()  # To hold unique timestamps
     chunks = {}  # To hold chunks of data for each timestamp
-
     with open(top_input_file, 'r') as f:
         current_chunk = ""
         current_timestamp = None
@@ -38,10 +29,8 @@ def generate_top(top_input_file):
                     current_chunk += line
             else:
                 current_chunk += line
-
         if current_timestamp:  # For the last chunk
             chunks[current_timestamp] = current_chunk.strip()
-
     # Escape special characters and construct a JavaScript object
     chunks_js_object = "{\n"
     for timestamp, chunk in chunks.items():
@@ -49,6 +38,4 @@ def generate_top(top_input_file):
             "\"", "\\\"").replace("\n", "\\n").replace("\t", "\\t")
         chunks_js_object += f'    "{timestamp}": "{escaped_chunk}",\n'
     chunks_js_object += "}"
-
     return chunks_js_object, timestamps
-

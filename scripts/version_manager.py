@@ -85,6 +85,14 @@ def inject_webapp_version(version):
                 (r'Version: (?:VERSION_PLACEHOLDER|\d+\.\d+\.\d+)',
                  f'Version: {version}')
             ]
+        },
+        {
+            "file": "templates/upload.html",
+            "patterns": [
+                (r'Linux All-in-One Performance Report - WebApp '
+                 r'(?:v)?(?:VERSION_PLACEHOLDER|\d+\.\d+\.\d+)',
+                 f'Linux All-in-One Performance Report - WebApp v{version}')
+            ]
         }
     ]
 
@@ -140,7 +148,8 @@ def check_versions(version):
     files_to_check = [
         "domains/htmlgeneration/html_generator.py",
         "domains/webapp/execution/linuxaioperf.py",
-        "domains/htmlgeneration/template.html"
+        "domains/htmlgeneration/template.html",
+        "templates/upload.html"
     ]
 
     for file_path in files_to_check:

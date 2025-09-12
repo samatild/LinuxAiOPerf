@@ -61,7 +61,7 @@ jobs:
         if git describe --tags --abbrev=0 HEAD~1 >/dev/null 2>&1; then
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1)
           COMMITS=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
-fix          COMMIT_COUNT=$(git rev-list --count $LAST_TAG..HEAD)
+          COMMIT_COUNT=$(git rev-list --count $LAST_TAG..HEAD)
         else
           COMMITS=$(git log --oneline --pretty=format:"- %s" -10)
           COMMIT_COUNT=10

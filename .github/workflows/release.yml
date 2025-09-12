@@ -82,22 +82,12 @@ jobs:
         echo "::set-output name=notes::$(cat release_notes.md)"
 
     - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Linux AIO Performance Collector ${{ github.ref_name }} Latest
+        name: Linux AIO Performance Collector ${{ github.ref_name }} Latest
         body: ${{ steps.release_notes.outputs.notes }}
+        files: linux_aio_perfcheck_v${{ github.ref_name }}.zip
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./linux_aio_perfcheck_v${{ github.ref_name }}.zip
-        asset_name: linux_aio_perfcheck_v${{ github.ref_name }}.zip
-        asset_content_type: application/zip

@@ -4,7 +4,7 @@ Author: Samuel Matildes
 Description: Linux AIO Perf Checker HTML report generator
 using domain-based architecture
 Requirements: Python 3.6 or higher
-Version: 2.0.0
+Version: 2.0.1
 Date: 15/05/2025
 """
 

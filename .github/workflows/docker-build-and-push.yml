@@ -27,10 +27,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Inject Version Information
-      run: |
-        python3 scripts/version_injector.py
-
     - name: Login to Docker Hub
       uses: docker/login-action@v1
       with:

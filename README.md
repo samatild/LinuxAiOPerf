@@ -51,9 +51,9 @@ For detailed documentation and usage instructions, please visit:
    **🐳 Alternative: Run locally with Docker:**
    ```bash
    # Pull and run the Docker image
-   docker run -p 5000:5000 samuelmatildes/linuxaioperf:latest
+   docker run -p 8000:80 samuelmatildes/linuxaioperf:latest
    
-   # Then access the web interface at http://localhost:5000
+   # Then access the web interface at http://localhost:8000
    ```
 
 ## Command-Line Usage

@@ -115,8 +115,10 @@ jobs:
         *Generated automatically on $(date)*
         EOF
         
-        # Output for next step
-        echo "::set-output name=notes::$(cat release_notes.md)"
+        # Output for next step using environment file
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Create Release
       uses: softprops/action-gh-release@v1

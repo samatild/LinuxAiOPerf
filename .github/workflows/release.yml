@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'  # Triggers on version tags like v1.43.1
 
+permissions:
+  contents: write
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -41,7 +44,7 @@ jobs:
         
         # Create the zip file
         cd release_temp
-        zip -r ../linux_aio_perfcheck_v${GITHUB_REF#refs/tags/v}.zip *
+        zip -r ../linux_aio_perfcheck_${GITHUB_REF#refs/tags/v}.zip *
         cd ..
         
         # Clean up
@@ -86,7 +89,7 @@ jobs:
       with:
         name: Linux AIO Performance Collector ${{ github.ref_name }} Latest
         body: ${{ steps.release_notes.outputs.notes }}
-        files: linux_aio_perfcheck_v${{ github.ref_name }}.zip
+        files: linux_aio_perfcheck_${{ github.ref_name }}.zip
         draft: false
         prerelease: false
       env:

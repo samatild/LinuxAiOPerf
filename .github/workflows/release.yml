@@ -44,8 +44,8 @@ jobs:
         
         # Create the zip file
         cd release_temp
-        zip -r linux_aio_perfcheck_${GITHUB_REF#refs/tags/v}.zip *
-        mv linux_aio_perfcheck_${GITHUB_REF#refs/tags/v}.zip ../
+        zip -r linux_aio_perfcheck_${{ github.ref_name }}.zip *
+        mv linux_aio_perfcheck_${{ github.ref_name }}.zip ../
         cd ..
         
         # List files to verify zip was created

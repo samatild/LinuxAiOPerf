@@ -1,20 +1,21 @@
 # Linux AIO Performance Checker
 
+[![Latest Release](https://img.shields.io/badge/release-v2.1.0-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
+[![Docker](https://img.shields.io/badge/docker-available-blue.svg)](https://hub.docker.com/r/samuelmatildes/linuxaioperf)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+
 <p float="left">
 
-  <img src="assets/linuxaiologo.png" />
+  <img src="assets/linuxaiologo.png" width="400" height="auto" />
 
 </p>
 
 Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
 
 ## Latest Release
-➕ **Version 1.43.1** - 15/May 2025
-- Added boxplot for High Resolution Disk Latency
-
-🎉 **Version 1.43.0** - 06/May 2025
-- Added NVMe disks support
-
+🚀 **Version 2.1.0** - 12/Sep 2025
+- Merged webapp to public repository
+- Made Docker image publicly available on Docker Hub
 
 ## Key Features
 
@@ -45,8 +46,15 @@ For detailed documentation and usage instructions, please visit:
 
 
 2. **📤 Upload the generated ZIP file:**
-   > ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
-   > This web interface will process your data and generate an interactive performance report.
+   ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
+
+   **🐳 Alternative: Run locally with Docker:**
+   ```bash
+   # Pull and run the Docker image
+   docker run -p 5000:5000 samuelmatildes/linuxaioperf:latest
+   
+   # Then access the web interface at http://localhost:5000
+   ```
 
 ## Command-Line Usage
 
@@ -64,7 +72,7 @@ Collect a 60 seconds quick report with high resolution disk metrics:
 
 
 ## Requirements
-⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; en_GB.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beggining and will provide instructions to the user on how to change it.
+⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; en_GB.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beginning and will provide instructions to the user on how to change it.
 
 ⚠️ **Packages:** sysstat and iotop packages are required for the script to execute. If they are not installed, the script will install them automatically. If the script is not able to install them, it will exit with an error message.
 
@@ -76,7 +84,7 @@ Collect a 60 seconds quick report with high resolution disk metrics:
 |----------|----------|----------|
 | Collect live data | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
 | Collect data via watchdog (Triggered by High CPU, Memory, or Disk IO) | It will setup a watchdog that will keep an eye for resource Utilization. Auto or Manual modes available | For when you don't know when the problem is going to happen. | 
-| Collect data via cron (At a specific time)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user section. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happenss. |
+| Collect data via cron (At a specific time)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user selection. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happens. |
  
    > ⚠️ **Attention:** When running on the 3rd mode (cronjob) the script will create a crontab entry but will not delete it. If you want to delete it you will need to do it manually. Don't forget to restart chronyd service after deleting the crontab entry.
 

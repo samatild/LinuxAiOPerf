@@ -57,28 +57,58 @@ jobs:
         if git describe --tags --abbrev=0 HEAD~1 >/dev/null 2>&1; then
           LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1)
           COMMITS=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
+          COMMIT_COUNT=$(git rev-list --count $LAST_TAG..HEAD)
         else
           COMMITS=$(git log --oneline --pretty=format:"- %s" -10)
+          COMMIT_COUNT=10
         fi
+        
+        # Get version from script
+        SCRIPT_VERSION=$(grep "# version:" build/linux_aio_perfcheck.sh | cut -d' ' -f3)
         
         # Create release notes
         cat > release_notes.md << EOF
-        ## Recent Changes
+        ## 🚀 Linux AIO Performance Collector ${{ github.ref_name }}
         
-        ### Recent Commits
+        ### 📋 What's New
+        This release includes $COMMIT_COUNT commits with various improvements and bug fixes.
+        
+        ### 🔄 Recent Changes
         $COMMITS
         
-        ### Download
-        Download the \`linux_aio_perfcheck_${{ github.ref_name }}.zip\` file and extract it.
+        ### 📦 Download & Installation
+        1. Download \`linux_aio_perfcheck_${{ github.ref_name }}.zip\`
+        2. Extract the zip file
+        3. Make the script executable: \`chmod +x linux_aio_perfcheck.sh\`
+        4. Run: \`./linux_aio_perfcheck.sh --quick -t 60\`
         
-        ### Usage
+        ### 🎯 Quick Start
         \`\`\`bash
+        # Quick 60-second collection
         ./linux_aio_perfcheck.sh --quick -t 60
+        
+        # With high-resolution disk metrics
+        ./linux_aio_perfcheck.sh --quick -t 60 -hres ON
+        
+        # Show help
+        ./linux_aio_perfcheck.sh --help
         \`\`\`
         
-        ### Documentation
-        For more information and documentation, visit:
-        https://github.com/samatild/LinuxAiOPerf
+        ### 📚 Documentation
+        - **GitHub Repository:** https://github.com/samatild/LinuxAiOPerf
+        - **User Manual:** Available in the repository
+        - **Issues & Support:** https://github.com/samatild/LinuxAiOPerf/issues
+        
+        ### ⚡ Features
+        - Comprehensive system performance data collection
+        - CPU, Memory, Disk, and Network metrics
+        - High-resolution disk I/O monitoring (optional)
+        - Interactive and command-line modes
+        - Automated report generation
+        - Cross-platform Linux support
+        
+        ---
+        *Generated automatically on $(date)*
         EOF
         
         # Output for next step

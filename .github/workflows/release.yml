@@ -1,0 +1,103 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.43.1
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+
+    - name: Create Release Archive
+      run: |
+        # Create a temporary directory for the release
+        mkdir -p release_temp
+        
+        # Copy the script and make it executable
+        cp build/linux_aio_perfcheck.sh release_temp/
+        chmod +x release_temp/linux_aio_perfcheck.sh
+        
+        # Create a README for the release
+        cat > release_temp/README.txt << 'EOF'
+        Linux All-in-One Performance Collector
+        
+        This is a standalone script that collects comprehensive performance data
+        from Linux systems for analysis.
+        
+        Usage:
+        ./linux_aio_perfcheck.sh --quick -t 60
+        
+        For more options:
+        ./linux_aio_perfcheck.sh --help
+        
+        For more information, visit:
+        https://github.com/samatild/LinuxAiOPerf
+        EOF
+        
+        # Create the zip file
+        cd release_temp
+        zip -r ../linux_aio_perfcheck_v${GITHUB_REF#refs/tags/v}.zip *
+        cd ..
+        
+        # Clean up
+        rm -rf release_temp
+
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        # Get recent commits since last tag
+        if git describe --tags --abbrev=0 HEAD~1 >/dev/null 2>&1; then
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1)
+          COMMITS=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
+        else
+          COMMITS=$(git log --oneline --pretty=format:"- %s" -10)
+        fi
+        
+        # Create release notes
+        cat > release_notes.md << EOF
+        ## Recent Changes
+        
+        ### Recent Commits
+        $COMMITS
+        
+        ### Download
+        Download the \`linux_aio_perfcheck_${{ github.ref_name }}.zip\` file and extract it.
+        
+        ### Usage
+        \`\`\`bash
+        ./linux_aio_perfcheck.sh --quick -t 60
+        \`\`\`
+        
+        ### Documentation
+        For more information and documentation, visit:
+        https://github.com/samatild/LinuxAiOPerf
+        EOF
+        
+        # Output for next step
+        echo "::set-output name=notes::$(cat release_notes.md)"
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Linux AIO Performance Collector ${{ github.ref_name }} Latest
+        body: ${{ steps.release_notes.outputs.notes }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./linux_aio_perfcheck_v${{ github.ref_name }}.zip
+        asset_name: linux_aio_perfcheck_v${{ github.ref_name }}.zip
+        asset_content_type: application/zip

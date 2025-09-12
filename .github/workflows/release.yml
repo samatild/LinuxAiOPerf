@@ -1,0 +1,132 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.43.1
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+
+    - name: Create Release Archive
+      run: |
+        # Create a temporary directory for the release
+        mkdir -p release_temp
+        
+        # Copy the script and make it executable
+        cp build/linux_aio_perfcheck.sh release_temp/
+        chmod +x release_temp/linux_aio_perfcheck.sh
+        
+        # Create a README for the release
+        cat > release_temp/README.txt << 'EOF'
+        Linux All-in-One Performance Collector
+        
+        This is a standalone script that collects comprehensive performance data
+        from Linux systems for analysis.
+        
+        Usage:
+        ./linux_aio_perfcheck.sh --quick -t 60
+        
+        For more options:
+        ./linux_aio_perfcheck.sh --help
+        
+        For more information, visit:
+        https://github.com/samatild/LinuxAiOPerf
+        EOF
+        
+        # Create the zip file
+        cd release_temp
+        zip -r linux_aio_perfcheck_${{ github.ref_name }}.zip *
+        mv linux_aio_perfcheck_${{ github.ref_name }}.zip ../
+        cd ..
+        
+        # List files to verify zip was created
+        ls -la *.zip
+        
+        # Clean up
+        rm -rf release_temp
+
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        # Get recent commits since last tag
+        if git describe --tags --abbrev=0 HEAD~1 >/dev/null 2>&1; then
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1)
+          COMMITS=$(git log --oneline --pretty=format:"- %s" $LAST_TAG..HEAD)
+          COMMIT_COUNT=$(git rev-list --count $LAST_TAG..HEAD)
+        else
+          COMMITS=$(git log --oneline --pretty=format:"- %s" -10)
+          COMMIT_COUNT=10
+        fi
+        
+        # Get version from script
+        SCRIPT_VERSION=$(grep "# version:" build/linux_aio_perfcheck.sh | cut -d' ' -f3)
+        
+        # Create release notes
+        cat > release_notes.md << EOF
+        ## 🚀 Linux AIO Performance Collector ${{ github.ref_name }}
+        
+        ### 📋 What's New
+        This release includes $COMMIT_COUNT commits with various improvements and bug fixes.
+        
+        ### 🔄 Recent Changes
+        $COMMITS
+        
+        ### 📦 Download & Installation
+        1. Download \`linux_aio_perfcheck_${{ github.ref_name }}.zip\`
+        2. Extract the zip file
+        3. Make the script executable: \`chmod +x linux_aio_perfcheck.sh\`
+        4. Run: \`./linux_aio_perfcheck.sh --quick -t 60\`
+        
+        ### 🎯 Quick Start
+        \`\`\`bash
+        # Quick 60-second collection
+        ./linux_aio_perfcheck.sh --quick -t 60
+        
+        # With high-resolution disk metrics
+        ./linux_aio_perfcheck.sh --quick -t 60 -hres ON
+        
+        # Show help
+        ./linux_aio_perfcheck.sh --help
+        \`\`\`
+        
+        ### 📚 Documentation
+        - **GitHub Repository:** https://github.com/samatild/LinuxAiOPerf
+        - **User Manual:** Available in the repository
+        - **Issues & Support:** https://github.com/samatild/LinuxAiOPerf/issues
+        
+        ### ⚡ Features
+        - Comprehensive system performance data collection
+        - CPU, Memory, Disk, and Network metrics
+        - High-resolution disk I/O monitoring (optional)
+        - Interactive and command-line modes
+        - Automated report generation
+        - Cross-platform Linux support
+        
+        ---
+        *Generated automatically on $(date)*
+        EOF
+        
+        # Output for next step using environment file
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Linux AIO Performance Collector ${{ github.ref_name }} Latest
+        body: ${{ steps.release_notes.outputs.notes }}
+        files: linux_aio_perfcheck_${{ github.ref_name }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

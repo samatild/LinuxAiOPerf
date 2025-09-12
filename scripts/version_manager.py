@@ -218,7 +218,7 @@ def main():
                 print("Goodbye!")
                 break
 
-            else:            
+            else:
                 print("Invalid choice. Please try again.")
 
             input("\nPress Enter to continue...")

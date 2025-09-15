@@ -219,3 +219,59 @@ color: white;
 margin-bottom: 10px;
 }
 
+.table-container {
+    margin-top: 10px;
+    overflow: auto;
+    max-height: 600px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background-color: #222;
+}
+
+.pid-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'PT Mono', monospace;
+    font-size: 12px;
+}
+
+.pid-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #333;
+    color: #f1f1f1;
+    z-index: 1;
+    border-bottom: 1px solid #555;
+    padding: 6px 8px;
+}
+
+.pid-table tbody td {
+    border-bottom: 1px solid #333;
+    padding: 4px 8px;
+}
+
+.pid-table tbody tr:nth-child(odd) {
+    background-color: #262626;
+}
+
+.pid-table tbody tr:nth-child(even) {
+    background-color: #1e1e1e;
+}
+
+.numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.heat-warn {
+    background: linear-gradient(90deg, rgba(255,200,0,0.15), transparent 70%);
+}
+
+.heat-high {
+    background: linear-gradient(90deg, rgba(255,0,0,0.18), transparent 70%);
+}
+
+.pid-controls {
+    margin: 8px 0;
+}
+

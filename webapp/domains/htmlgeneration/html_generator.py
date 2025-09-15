@@ -32,7 +32,7 @@ from ..sysconfig.lvm.lvmviz import (
     create_graph
 )
 
-script_version = "2.1.0"
+script_version = "2.1.1"
 
 
 def log_message(message, log_level='Info'):
@@ -438,42 +438,31 @@ def generate_report(
     rp = ""
     rp += f'''
         <script>
-            // Function to populate chunks when a timestamp is selected
-            function displayChunk() {{
+            document.addEventListener('DOMContentLoaded', function() {{
                 const chunkData = {json.dumps(chunks)};
                 const header = "{pidstat_header}";
-                const selectedTimestamp =
-                    document.getElementById("timestampSelect").value;
-                const sanitizedChunk = chunkData[selectedTimestamp];
-                const originalChunk = sanitizedChunk
-                    .replace(/\\\\n/g, '\\n')
-                    .replace(/\\\\t/g, '\\t')
-                    .split('\\n');
-
-                let formattedChunk = header + "\\n";
-                for(let line of originalChunk) {{
-                    const columns = line.split(/\\s+/);
-                if (parseFloat(columns[7]) > 80) {{
-                    // Apply red color if the 8th column is greater than 80
-                    formattedChunk += '<span style="color: red;">' + \
-                                      line + '</span>\\n';
-                }} else if (parseFloat(columns[7]) > 60) {{
-                    // Apply yellow color if the 8th column is greater than 60
-                    // but less than or equal to 80
-                    formattedChunk += '<span style="color: yellow;">' + \
-                                      line + '</span>\\n';
-                }} else {{
-                    formattedChunk += line + '\\n';
+                if (window.initPidstatSection) {{
+                    window.initPidstatSection(
+                        'timestampSelect',
+                        'pidstatCpuTable',
+                        chunkData,
+                        header,
+                        {{
+                            metric: '%CPU',
+                            thresholds: {{ warn: 60, crit: 80 }},
+                            defaultTopN: 25
+                        }}
+                    );
                 }}
-                }}
-
-                document.getElementById("chunkDisplay").innerHTML = \
-                    formattedChunk.replace(/\\n/g, '<br>');
-            }}
+            }});
         </script>
-            <h2>PID Statiscs - CPU Load Distribution</h2>
-            <h3>Select sample where you obsvered high CPU utilization</h3>
-            <select id="timestampSelect" onchange="displayChunk()">
+            <h2>PID Statistics - CPU Load Distribution</h2>
+            <h3>Select sample where you observed high CPU utilization</h3>
+            <div class="pid-controls">
+                <select id="timestampSelect">
+                    <option value="" disabled selected>
+                        Select Timestamp
+                    </option>
     '''
 
     # Adding the options for the combobox in HTML
@@ -483,8 +472,9 @@ def generate_report(
         rp += f'<option value="{timestamp}">{timestamp}</option>\n'
 
     rp += '''
-            </select>
-            <pre id="chunkDisplay"></pre>
+                </select>
+            </div>
+            <div class="table-container"><div id="pidstatCpuTable"></div></div>
     '''
     content = content.replace(
         "<!-- procinfo.pidstat_CPU_placeholder -->",
@@ -500,56 +490,45 @@ def generate_report(
     rp = ""
     rp += f'''
         <script>
-            // Function to populate chunks when a timestamp is selected
-            function piodisplayChunk() {{
-                const piochunkData = {json.dumps(piochunks)};
-                const pioheader = "{pidstatio_header}";
-                const pioselectedTimestamp =
-                    document.getElementById("piotimestampSelect").value;
-                const piosanitizedChunk = piochunkData[pioselectedTimestamp];
-                const piooriginalChunk = piosanitizedChunk
-                    .replace(/\\\\n/g, '\\n')
-                    .replace(/\\\\t/g, '\\t')
-                    .split('\\n');
-                console.log(document.getElementById("piochunkDisplay"));
-
-
-                let pioformattedChunk = pioheader + "\\n";
-                for(let line of piooriginalChunk) {{
-                    const piocolumns = line.split(/\\s+/);
-                if (parseFloat(piocolumns[7]) > 80) {{
-                    // Apply red color if the 8th column is greater than 80
-                    pioformattedChunk += '<span style="color: red;">' + \
-                                      line + '</span>\\n';
-                }} else if (parseFloat(piocolumns[7]) > 60) {{
-                    // Apply yellow color if the 8th column is greater than 60
-                    // but less than or equal to 80
-                    pioformattedChunk += '<span style="color: yellow;">' + \
-                                      line + '</span>\\n';
-                }} else {{
-                    pioformattedChunk += line + '\\n';
+            document.addEventListener('DOMContentLoaded', function() {{
+                const chunkData = {json.dumps(piochunks)};
+                const header = "{pidstatio_header}";
+                if (window.initPidstatSection) {{
+                    window.initPidstatSection(
+                        'piotimestampSelect',
+                        'pidstatIoTable',
+                        chunkData,
+                        header,
+                        {{
+                            metric: 'kB_rd/s',
+                            thresholds: {{ warn: 10000, crit: 50000 }},
+                            highlightColumn: 'iodelay',
+                            highlightThresholds: {{ warn: 9, crit: 20 }},
+                            defaultTopN: 25,
+                            controlsKey: 'Io'
+                        }}
+                    );
                 }}
-                }}
-
-                document.getElementById("piochunkDisplay").innerHTML = \
-                    pioformattedChunk.replace(/\\n/g, '<br>');
-            }}
+            }});
         </script>
-            <h2>PID Statiscs - IO Load Distribution</h2>
-            <h3>Select sample where you obsvered high IO utilization</h3>
-            <select id="piotimestampSelect" onchange="piodisplayChunk()">
+            <h2>PID Statistics - IO Load Distribution</h2>
+            <h3>Select sample where you observed high IO utilization</h3>
+            <div class="pid-controls">
+                <select id="piotimestampSelect">
+                    <option value="" disabled selected>
+                        Select Timestamp
+                    </option>
     '''
 
     # Adding the options for the combobox in HTML
     piosorted_timestamps = sorted(list(piotimestamps))
     rp += '<option value="all">Select Timestamp</option>\n'
     for piotimestamp in piosorted_timestamps:
-        rp += f'''
-        <option value="{piotimestamp}">{piotimestamp}</option>\n'
-        '''
+        rp += f'<option value="{piotimestamp}">{piotimestamp}</option>\n'
     rp += '''
-            </select>
-            <pre id="piochunkDisplay"></pre>
+                </select>
+            </div>
+            <div class="table-container"><div id="pidstatIoTable"></div></div>
     '''
 
     content = content.replace(
@@ -566,57 +545,46 @@ def generate_report(
     rp = ""
     rp += f'''
         <script>
-            // Function to populate chunks when a timestamp is selected
-            function memdisplayChunk() {{
-                const memchunkData = {json.dumps(memchunks)};
-                const memheader = "{pidstatmem_header}";
-                const memselectedTimestamp =
-                    document.getElementById("memtimestampSelect").value;
-                const memsanitizedChunk = memchunkData[memselectedTimestamp];
-                const memoriginalChunk = memsanitizedChunk
-                    .replace(/\\\\n/g, '\\n')
-                    .replace(/\\\\t/g, '\\t')
-                    .split('\\n');
-                console.log(document.getElementById("memchunkDisplay"));
-
-
-                let memformattedChunk = memheader + "\\n";
-                for(let line of memoriginalChunk) {{
-                    const memcolumns = line.split(/\\s+/);
-                if (parseFloat(memcolumns[7]) > 80) {{
-                    // Apply red color if the 8th column is greater than 80
-                    memformattedChunk += '<span style="color: red;">' + \
-                                      line + '</span>\\n';
-                }} else if (parseFloat(memcolumns[7]) > 60) {{
-                    // Apply yellow color if the 8th column is greater than 60
-                    // but less than or equal to 80
-                    memformattedChunk += '<span style="color: yellow;">' + \
-                                      line + '</span>\\n';
-                }} else {{
-                    memformattedChunk += line + '\\n';
+            document.addEventListener('DOMContentLoaded', function() {{
+                const chunkData = {json.dumps(memchunks)};
+                const header = "{pidstatmem_header}";
+                if (window.initPidstatSection) {{
+                    window.initPidstatSection(
+                        'memtimestampSelect',
+                        'pidstatMemTable',
+                        chunkData,
+                        header,
+                        {{
+                            metric: '%MEM',
+                            thresholds: {{ warn: 60, crit: 80 }},
+                            highlightColumn: '%MEM',
+                            highlightThresholds: {{ warn: 60, crit: 80 }},
+                            defaultTopN: 25,
+                            controlsKey: 'Mem'
+                        }}
+                    );
                 }}
-                }}
-
-                document.getElementById("memchunkDisplay").innerHTML = \
-                    memformattedChunk.replace(/\\n/g, '<br>');
-            }}
+            }});
         </script>
-            <h2>PID Statiscs - Memory Load Distribution</h2>
-            <h3>Select sample where you obsvered high Memory utilization</h3>
-            <select id="memtimestampSelect" onchange="memdisplayChunk()">
+            <h2>PID Statistics - Memory Load Distribution</h2>
+            <h3>Select sample where you observed high Memory utilization</h3>
+            <div class="pid-controls">
+                <select id="memtimestampSelect">
+                    <option value="" disabled selected>
+                        Select Timestamp
+                    </option>
     '''
 
     # Adding the options for the combobox in HTML
     memsorted_timestamps = sorted(list(memtimestamps))
     rp += '<option value="all">Select Timestamp</option>\n'
     for memtimestamp in memsorted_timestamps:
-        rp += f'''
-        <option value="{memtimestamp}">{memtimestamp}</option>\n'
-        '''
+        rp += f'<option value="{memtimestamp}">{memtimestamp}</option>\n'
 
     rp += '''
-            </select>
-            <pre id="memchunkDisplay"></pre>
+                </select>
+            </div>
+            <div class="table-container"><div id="pidstatMemTable"></div></div>
         </div>
     '''
 
@@ -631,23 +599,34 @@ def generate_report(
     rp = ""
     rp += f'''
         <script>
-            // Function to populate TOP chunks when a timestamp is selected
-            function displayTOPChunk() {{
+            document.addEventListener('DOMContentLoaded', function() {{
                 const chunkData = {top_chunks_js_object};
-                const selectedTimestamp =
-                    document.getElementById("topTimestampSelect").value;
-                const sanitizedChunk = chunkData[selectedTimestamp];
-                const originalChunk = sanitizedChunk
-                    .replace(/\\\\n/g, '\\n')
-                    .replace(/\\\\t/g, '\\t');
-                document.getElementById("topChunkDisplay").innerText = \
-                    originalChunk;
-            }}
+                if (window.initTopSection) {{
+                    window.initTopSection(
+                        'topTimestampSelect',
+                        'topTable',
+                        chunkData,
+                        {{
+                            // TOP: prefer %CPU if present; fall back handled
+                            // in JS
+                            metric: '%CPU',
+                            thresholds: {{ warn: 60, crit: 80 }},
+                            highlightColumn: '%CPU',
+                            highlightThresholds: {{ warn: 60, crit: 80 }},
+                            defaultTopN: 25,
+                            controlsKey: 'Top'
+                        }}
+                    );
+                }}
+            }});
         </script>
             <h2>top output - sampled</h2>
-            <h3>Select sample bellow</h3>
-            <select id="topTimestampSelect" onchange="displayTOPChunk()">
-            <option value="" disabled selected>Select your option</option>
+            <h3>Select sample below</h3>
+            <div class="pid-controls">
+                <select id="topTimestampSelect">
+                    <option value="" disabled selected>
+                        Select Timestamp
+                    </option>
     '''
 
     # Adding the options for the top combobox in HTML
@@ -655,8 +634,9 @@ def generate_report(
         rp += f'<option value="{timestamp}">{timestamp}</option>\n'
 
     rp += '''
-            </select>
-            <pre id="topChunkDisplay"></pre>
+                </select>
+            </div>
+            <div class="table-container"><div id="topTable"></div></div>
 
     '''
 
@@ -671,24 +651,35 @@ def generate_report(
     rp = ""
     rp += f'''
         <script>
-            // Function to populate IOTOP chunks when a timestamp is selected
-            function displayIOTOPChunk() {{
+            document.addEventListener('DOMContentLoaded', function() {{
                 const chunkData = {iotop_chunks_js_object};
-                const selectedTimestamp =
-                    document.getElementById("iotopTimestampSelect").value;
-                const sanitizedChunk = chunkData[selectedTimestamp];
-                const originalChunk = sanitizedChunk
-                    .replace(/\\\\n/g, '\\n')
-                    .replace(/\\\\t/g, '\\t');
-                document.getElementById("iotopChunkDisplay").innerText = \
-                    originalChunk;
-            }}
+                if (window.initIotopSection) {{
+                    window.initIotopSection(
+                        'iotopTimestampSelect',
+                        'iotopTable',
+                        chunkData,
+                        {{
+                            // iotop: highlight IO usage columns if present;
+                            // fallback in JS
+                            metric: 'DISK_READ',
+                            thresholds: {{ warn: 10000, crit: 50000 }},
+                            highlightColumn: 'IO%',
+                            highlightThresholds: {{ warn: 60, crit: 80 }},
+                            defaultTopN: 25,
+                            controlsKey: 'Iotop'
+                        }}
+                    );
+                }}
+            }});
         </script>
             <h2>iotop output - sampled</h2>
-            <h3>Select sample bellow -
-            useful to understand which process is on top the Disk</h3>
-            <select id="iotopTimestampSelect" onchange="displayIOTOPChunk()">
-            <option value="" disabled selected>Select your option</option>
+            <h3>Select sample below - useful to understand which process is on
+            top of the Disk</h3>
+            <div class="pid-controls">
+                <select id="iotopTimestampSelect">
+                    <option value="" disabled selected>
+                        Select Timestamp
+                    </option>
     '''
 
     # Adding the options for the iotop combobox in HTML
@@ -696,8 +687,9 @@ def generate_report(
         rp += f'<option value="{timestamp}">{timestamp}</option>\n'
 
     rp += '''
-            </select>
-            <pre id="iotopChunkDisplay"></pre>
+                </select>
+            </div>
+            <div class="table-container"><div id="iotopTable"></div></div>
     '''
 
     content = content.replace(

@@ -102,7 +102,7 @@
     <div class="tab-content" id="subcontent-about">
         <h2>Linux All-in-One Performance Report</h2>
         <pre>
-Version: 2.1.0
+Version: 2.1.1
 All-in-one Linux Performance Collector Script.
 Report generated directly over Web Application.
 Fast, simple and user friendly.
@@ -222,25 +222,50 @@ SOFTWARE.
 
     <div class="tab-content" id="tab6">
         <!-- Process Information - Process Stats CPU -->
+        <p>
+            PIDSTAT CPU shows per-process CPU utilization snapshots captured once per second.
+            Select a timestamp to view that one-second sample. For context, correlate these
+            samples with the CPU graphs under Performance Analysis.
+        </p>
         <!-- procinfo.pidstat_CPU_placeholder -->
     </div>
  
     <div class="tab-content" id="subcontent-pidstatio">
         <!-- Process Information - Process Stats IO -->
+        <p>
+            PIDSTAT IO shows per-process disk I/O activity (reads/writes, delay) captured
+            once per second. Select a timestamp to view that one-second sample. Correlate
+            these samples with the Disk graphs under Performance Analysis.
+        </p>
         <!-- procinfo.pidstat_IO_placeholder -->
     </div>
     <div class="tab-content" id="subcontent-pidstatmem">
         <!-- Process Information - Process Stats Memory -->
+        <p>
+            PIDSTAT Memory shows per-process memory usage (e.g., %MEM) captured once per
+            second. Select a timestamp to view that one-second sample. Correlate these
+            samples with the Memory graphs under Performance Analysis.
+        </p>
         <!-- procinfo.pidstat_mem_placeholder -->
     </div>
 
     <div class="tab-content" id="tab7">
         <!-- Process Information - top -->
+        <p>
+            top shows system and per-process activity snapshots captured once per second
+            during collection. Select a timestamp to view that one-second sample. Correlate
+            these views with the Performance Analysis graphs for trends.
+        </p>
         <!-- procinfo.top_placeholder -->
     </div>
 
     <div class="tab-content" id="tab8">
         <!-- Process Information - iotop -->
+        <p>
+            iotop shows per-process disk I/O utilization snapshots captured once per second.
+            Select a timestamp to view that one-second sample. Correlate these snapshots
+            with Disk and related graphs under Performance Analysis.
+        </p>
         <!-- procinfo.iotop_placeholder -->
     </div>
 

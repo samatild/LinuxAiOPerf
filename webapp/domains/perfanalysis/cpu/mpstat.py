@@ -3,6 +3,7 @@ CPU domain processor for mpstat data.
 """
 
 import os
+import warnings
 import tempfile
 import logging
 from typing import List
@@ -66,6 +67,50 @@ class CPUProcessor(BaseDataProcessor):
 
             # Read into DataFrame
             df = pd.read_csv(self.temp_file.name, sep=r'\s+')
+
+            # Ensure timestamp column is parsed as datetime so date axes work
+            try:
+                ts_col = df.columns[0]
+                ts_series = df[ts_col].astype(str)
+
+                fmt = None
+                if ts_series.str.match(r'^\d{2}:\d{2}:\d{2}$').all():
+                    fmt = '%H:%M:%S'
+                elif ts_series.str.match(
+                        r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$'
+                ).all():
+                    fmt = '%Y-%m-%d %H:%M:%S'
+                elif ts_series.str.match(
+                        r'^\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2}$'
+                ).all():
+                    fmt = '%m/%d/%Y %H:%M:%S'
+                elif ts_series.str.match(
+                        r'^\d{2}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2}$'
+                ).all():
+                    fmt = '%m/%d/%y %H:%M:%S'
+
+                if fmt is not None:
+                    parsed_ts = pd.to_datetime(
+                        ts_series, format=fmt, errors='coerce'
+                    )
+                else:
+                    # Fallback to generic parsing and silence inference warning
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', UserWarning)
+                        parsed_ts = pd.to_datetime(ts_series, errors='coerce')
+
+                df[ts_col] = parsed_ts
+            except Exception:
+                # If parsing fails, leave as-is
+                # Plots still render with a categorical x-axis
+                pass
+
+            # Coerce metric columns to numeric
+            for col in df.columns[2:]:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            # Normalize CPU column to string for reliable filtering/grouping
+            df[df.columns[1]] = df[df.columns[1]].astype(str)
 
             # Clean up temp file
             os.unlink(self.temp_file.name)

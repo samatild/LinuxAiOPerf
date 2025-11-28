@@ -119,6 +119,7 @@ The collector script is compatible with most modern Linux distributions as it us
 
 It as been tested with the following Linux distributions:
 
+- Debian 12/13
 - Ubuntu 18.04
 - Ubuntu 20.04
 - Red Hat Enterprise Linux 7

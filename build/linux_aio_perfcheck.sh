@@ -107,7 +107,7 @@ EOF
         local package_name=$1
         local distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
         
-        if [[ $distro == "ubuntu" ]]; then
+        if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
             dpkg-query -W -f='${Status}' "$package_name" 2>/dev/null | grep -q "ok installed"
         else
             if rpm -q "$package_name" >/dev/null 2>&1; then
@@ -140,7 +140,7 @@ EOF
     distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
     
     case "$distro" in
-        ubuntu)
+        ubuntu|debian)
             package_manager="apt-get"
             sysstat_package_name="sysstat"
             iotop_package_name="iotop"
@@ -326,7 +326,7 @@ function dataCapture() {
     
     # Check the last package update timestamp based on the distribution (yes we need to check according to distro)
     case $distro in
-        ubuntu)
+        ubuntu|debian)
             check_ubuntu_last_update
         ;;
         sles)

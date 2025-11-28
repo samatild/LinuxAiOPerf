@@ -3,7 +3,7 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 2.1.2
+# version: 2.1.3
 # Date: 30/May/2025
      
 runmode="null"
@@ -1177,7 +1177,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 2.1.2"
+            echo "Linux All-in-One Performance Collector, version 2.1.3"
             exit 0
             ;;
         -h|--help)

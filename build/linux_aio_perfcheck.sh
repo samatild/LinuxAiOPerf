@@ -3,7 +3,7 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 2.1.2
+# version: 2.1.3
 # Date: 30/May/2025
      
 runmode="null"
@@ -11,50 +11,66 @@ runmode="null"
 # Declare a global variable for High Resolution Disk metrics
 high_res_disk_metrics="OFF"
 
+# Declare a global variable for skipping validation checks
+skip_checks="OFF"
+
 function print_usage() {
-    echo -e "\033[1;34m=================================================================================================\033[0m"
-    echo "Usage: $0 [OPTIONS] COMMAND"
     echo ""
-    echo -e "\033[1;32mCommands:\033[0m"
-    echo -e "\033[1;32m  --quick                    \033[1;31m Quick data collection mode"
-    echo -e "\033[1;32m  --version                  \033[1;31m Show version information"
+    echo -e "\e[1;37mLinux All-in-One Performance Collector\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo ""
-    echo -e "\033[1;32mOptions:\033[0m"
-    echo -e "\033[1;32m  -t, --time SECONDS         \033[1;31m Duration in seconds (10-900)"
-    echo -e "\033[1;32m  --high-resolution-disk-counters=VALUE, -hres VALUE"
-    echo -e "                             \033[1;31m Enable/disable high resolution disk counters (ON/OFF)"
+    echo -e "\e[1;33mUsage:\e[0m"
+    echo -e "  $0 [OPTIONS] COMMAND"
     echo ""
-    echo -e "\033[1;32mExamples:\033[0m"
-    echo -e "\033[1;36m  $0 --quick -t 60 -hres ON"
-    echo -e "  $0 --quick --time 300 --high-resolution-disk-counters=OFF\033[0m"
+    echo -e "\e[1;33mCommands:\e[0m"
+    echo -e "  \e[1;32m--quick\e[0m                        Quick data collection mode"
+    echo -e "  \e[1;32m--watchdog-status\e[0m              Check watchdog status"
+    echo -e "  \e[1;32m--watchdog-stop\e[0m                Stop running watchdog"
+    echo -e "  \e[1;32m--cron-list\e[0m                    List scheduled cron jobs"
+    echo -e "  \e[1;32m--cron-remove\e[0m                  Remove scheduled cron jobs"
+    echo -e "  \e[1;32m--version\e[0m                      Show version information"
     echo ""
-    echo -e "\033[1;34mNote: When run without arguments, the script will start in interactive mode\033[0m"
-    echo -e "\033[1;34m=================================================================================================\033[0m"
+    echo -e "\e[1;33mOptions:\e[0m"
+    echo -e "  \e[1;32m-t, --time\e[0m SECONDS            Duration in seconds (10-900)"
+    echo -e "  \e[1;32m-hres\e[0m VALUE                   Enable/disable high resolution disk counters (ON/OFF)"
+    echo -e "  \e[1;32m--high-resolution-disk-counters=\e[0mVALUE"
+    echo -e "  \e[1;32m--skip-checks\e[0m                  Skip locale and package validation checks"
+    echo ""
+    echo -e "\e[1;33mExamples:\e[0m"
+    echo -e "  \e[0;36m$0 --quick -t 60 -hres ON\e[0m"
+    echo -e "  \e[0;36m$0 --quick -t 120 --skip-checks\e[0m"
+    echo -e "  \e[0;36m$0 --watchdog-status\e[0m"
+    echo -e "  \e[0;36m$0 --cron-list\e[0m"
+    echo ""
+    echo -e "\e[0;90mNote: Run without arguments to start in interactive mode\e[0m"
+    echo ""
 }
 setLocalInstructions(){
     clear
-    echo -e "\e[1;33m"
-    cat << "EOF"
- ==================================================================
-        Instructions on how to update local Time Zone settings 
- ==================================================================
-EOF
-
-    echo -e "\n\e[0;31m[Linux Generic procedure is]\e[0m"
-    echo -e "\033[1;34m# Check what Language packages we have installed\e[0m"
-    echo -e "locale -a\n"
-    echo -e "\033[1;34m# Install if necesarry\e[0m"
-    echo -e "localedef -i en_US -f UTF-8 en_US.UTF-8\n"
-    echo -e "\033[1;34m# Change LC_TIME to en_US.UTF-8\e[0m"
-    echo -e "localectl set-locale LC_TIME=en_US.UTF-8\n"
-    echo -e "\033[1;34m# Exit your current user session, and re-login\e[0m"
-    echo -e "\033[1;34m# We need to source new locale settings\e[0m\n"
-    echo -e "\033[1;34m# You can revert using same command\e[0m"
-    echo -e "localectl set-locale LC_TIME=<original value>\n"
-    
-    # Exit
-    echo "Once you are done with Time Zone adjustments, re-run the Collector script."
-    echo "Press any key to exit..."
+    echo ""
+    echo -e "\e[1;37mInstructions: Update Local Time Zone Settings\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    echo -e "\e[1;37mLinux Generic Procedure:\e[0m"
+    echo ""
+    echo -e "\e[1;36m→\e[0m Check what Language packages are installed:"
+    echo -e "  \e[0;90m$\e[0m locale -a"
+    echo ""
+    echo -e "\e[1;36m→\e[0m Install if necessary:"
+    echo -e "  \e[0;90m$\e[0m localedef -i en_US -f UTF-8 en_US.UTF-8"
+    echo ""
+    echo -e "\e[1;36m→\e[0m Change LC_TIME to en_US.UTF-8:"
+    echo -e "  \e[0;90m$\e[0m localectl set-locale LC_TIME=en_US.UTF-8"
+    echo ""
+    echo -e "\e[1;36m→\e[0m Exit your current user session and re-login"
+    echo -e "  \e[0;90m(source new locale settings)\e[0m"
+    echo ""
+    echo -e "\e[1;36m→\e[0m Revert if needed:"
+    echo -e "  \e[0;90m$\e[0m localectl set-locale LC_TIME=<original value>"
+    echo ""
+    echo -e "\e[0;90mOnce done, re-run the Collector script.\e[0m"
+    echo ""
+    echo -e "Press any key to exit..."
     read -s -n 1
     exit 0 
 }
@@ -65,49 +81,50 @@ localeValidation() {
     CURRENT_LC_TIME=$(locale | grep LC_TIME | cut -d= -f2 | tr -d '"')
     
     if [[ "$CURRENT_LC_TIME" != "en_US.UTF-8" && "$CURRENT_LC_TIME" != "C.UTF-8" && "$CURRENT_LC_TIME" != "POSIX" && "$CURRENT_LC_TIME" != "en_GB.UTF-8" ]]; then
-        echo -e "\n\e[0;31mIncompatible Time Zone Settings!\e[0m"
-        echo -e "\e[0;37mLC_TIME=$CURRENT_LC_TIME\e[0m"
-        echo -e "\n\e[1;33mCompatible LC_TIME formats are: \e[0men_US.UTF-8 ; C.UTF-8 ; POSIX ; "
-        echo -e "\nThe script will now exit. Please change local Time Zone settings manually and then return."
-        read -p "Do you want to see an example on how to change Time Zone settings? (y/n): " choice
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Incompatible locale settings detected"
+        echo -e "  Current LC_TIME: \e[1;37m$CURRENT_LC_TIME\e[0m"
+        echo ""
+        echo -e "  Compatible formats:"
+        echo -e "    • en_US.UTF-8"
+        echo -e "    • C.UTF-8"
+        echo -e "    • POSIX"
+        echo -e "    • en_GB.UTF-8"
+        echo ""
+        echo -e "  The script will now exit. Please update your locale settings."
+        echo ""
+        read -p "$(echo -e "  View instructions? \e[0;36m(y/n)\e[0m: ")" choice
         case "$choice" in
             [Yy])
                 # Redirect to another script to change locale settings
                 setLocalInstructions
                 ;;
             [Nn])
-                echo "Quitting without printing the example."
-                echo -e "\e[0m"
+                echo ""
+                echo "Exiting."
                 exit 0
                 ;;
             *)
-                echo "Invalid choice. Quitting."
-                echo -e "\e[0m"
+                echo ""
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid choice. Exiting."
                 exit 0
-                
                 ;;
         esac
     else
-        echo -e "\n\e[0;32mLocal Timezone settings are compatible.\e[0m: $CURRENT_LC_TIME"
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m Locale settings validated (\e[0;90m$CURRENT_LC_TIME\e[0m)"
     fi
 }
 
 
 function packageValidation(){
-
-    echo -e "\e[1;33m"
-    cat << "EOF"
- ======================
-   Package Validation  
- ======================
-EOF
-   
+    
     # Function to check if a package is installed
     is_package_installed() {
         local package_name=$1
         local distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
         
-        if [[ $distro == "ubuntu" ]]; then
+        if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
             dpkg-query -W -f='${Status}' "$package_name" 2>/dev/null | grep -q "ok installed"
         else
             if rpm -q "$package_name" >/dev/null 2>&1; then
@@ -140,7 +157,7 @@ EOF
     distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
     
     case "$distro" in
-        ubuntu)
+        ubuntu|debian)
             package_manager="apt-get"
             sysstat_package_name="sysstat"
             iotop_package_name="iotop"
@@ -156,7 +173,9 @@ EOF
             iotop_package_name="iotop"
         ;;
         *)
-            echo "Unsupported distribution: $distro"
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Unsupported distribution: $distro"
+            echo "Supported distributions: Ubuntu, Debian, RHEL, CentOS, Oracle Linux, SLES"
             exit 1
         ;;
     esac
@@ -165,84 +184,88 @@ EOF
     sysstat_installed=false
     iotop_installed=false
     
+    echo ""
+    echo -e "\e[1;37mChecking dependencies...\e[0m"
+    
     if is_package_installed "$sysstat_package_name"; then
         sysstat_installed=true
-        echo -e "\e[0;37m[sysstat] \e[0;32mInstalled\e[0m"
+        echo -e "  \e[1;32m✓\e[0m sysstat"
     else
-        echo -e "\e[0;37m[sysstat] \e[0;31mNot installed\e[0m"
+        echo -e "  \e[1;31m✗\e[0m sysstat"
     fi
     
     if is_package_installed "$iotop_package_name"; then
         iotop_installed=true
-        echo -e "\e[0;37m[iotop] \e[0;32mInstalled\e[0m"
+        echo -e "  \e[1;32m✓\e[0m iotop"
     else
-        echo -e "\e[0;37m[iotop] \e[0;31mNot installed\e[0m"
+        echo -e "  \e[1;31m✗\e[0m iotop"
     fi
     
     # Prompt the user for installation
     if ! $sysstat_installed || ! $iotop_installed; then
-        echo -e "\e[0m"
-        read -rp "Dependecies not met. Do you want to install them? (y/n): " choice
+        echo ""
+        read -rp "$(echo -e "\e[1;33m[WARNING]\e[0m Missing dependencies. Install now? \e[0;36m(y/n)\e[0m: ")" choice
         if [[ $choice == [Yy] ]]; then
+            echo ""
             if ! $sysstat_installed; then
                 # Install the sysstat package
-                echo "Installing sysstat package..."
+                echo -e "\e[1;36m→\e[0m Installing sysstat..."
                 install_package "$package_manager" "$sysstat_package_name"
-                echo "sysstat package installed successfully."
+                echo -e "  \e[1;32m[OK]\e[0m sysstat installed"
             fi
             
             if ! $iotop_installed; then
                 # Install the iotop package
-                echo "Installing iotop package..."
+                echo -e "\e[1;36m→\e[0m Installing iotop..."
                 install_package "$package_manager" "$iotop_package_name"
-                echo "iotop package installed successfully."
+                echo -e "  \e[1;32m[OK]\e[0m iotop installed"
             fi
         else
-            echo "Packages not installed. Exiting..."
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Required packages not installed. Exiting."
             exit 0
         fi
     else
-        echo -e "\e[0;37m"
-        echo -e "Dependencies met. \e[0;32mValidation passed.\e[0m"
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m All dependencies installed"
     fi
     displayMenu
 }
 
 function motd(){
     clear
-    echo -e "\e[1;34m"
-    cat << "EOF"
+    echo ""
+    echo -e "\e[1;37mLinux All-in-One Performance Collector\e[0m"
+    echo -e "\e[0;90mUnlocking advanced Linux metrics for humans\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
 
-===============================
-      Linux All-in-One        
-   Performance Collector      
-===============================
-* Unlocking advanced Linux metrics for humans *
-EOF
+    # Check if we should skip validations
+    if [ "$skip_checks" == "OFF" ]; then
+        # We always need to validate TZ first
+        localeValidation
 
-    # We always need to validate TZ first
-    localeValidation
-
-    # Validate Packages
-    packageValidation
+        # Validate Packages
+        packageValidation
+    else
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m Validation checks skipped"
+        displayMenu
+    fi
 
 }
 
 # Define the liveData function
 function liveData() {
     # DATA CAPTURE STARTS HERE
-    echo -e "\e[1;33m"
-    cat << "EOF"
- =======================
-    Live Data Capture  
- =======================
-EOF
-    
-    echo -e "\e[1mEnter the capture duration in seconds (\e[0m\e[1;31mminimum 10\e[0m\e[1m, \e[0m\e[1;32mmaximum 900\e[0m\e[1m)\e[0m"
+    echo ""
+    echo -e "\e[1;37mLive Data Capture\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    echo -e "Enter capture duration \e[0;90m(10-900 seconds)\e[0m"
     read -p "Duration: " duration
     
     if (( duration < 10 || duration > 900 )); then
-        echo "Invalid duration. Please enter a value between 10 and 900."
+        echo -e "\e[1;31m[ERROR]\e[0m Invalid duration. Must be between 10 and 900 seconds."
         exit 1
     fi
 
@@ -254,7 +277,7 @@ EOF
 }
 # Function to collect high granularity disk statistics
 function collectDiskStats() {
-    echo "Starting High Resolution disk Stats..."
+    echo -e "\e[1;36m→\e[0m Starting high resolution disk monitoring..."
     local output_dir=$1
     local duration=$2
     local output_file="$output_dir/diskstats_log.txt"
@@ -272,7 +295,7 @@ function collectDiskStats() {
         ' >> "$output_file"
         sleep 0.05
     done
-    echo "Stopping High Resolution disk Stats..."
+    echo -e "\e[1;36m→\e[0m Stopping high resolution disk monitoring..."
 }
 
 function dataCapture() {
@@ -280,7 +303,15 @@ function dataCapture() {
     local high_res_disk_metrics=$2
 
     # Inform the user about the collection and duration
-    echo "Starting data capture for $duration seconds..."
+    echo ""
+    echo -e "\e[1;37mData Capture\e[0m \e[0;90m($duration seconds)\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    
+    # Show if validation checks were skipped
+    if [ "$skip_checks" == "ON" ]; then
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m Validation checks skipped"
+    fi
     
     # Output Dir
     outputdir="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck"
@@ -320,13 +351,11 @@ function dataCapture() {
     distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
     
     echo ""
-    echo -e "\e[1;33mStarting\e[0m"
-    
-    echo "Gathering general system information (...)"
+    echo -e "\e[1;36m→\e[0m Gathering system information..."
     
     # Check the last package update timestamp based on the distribution (yes we need to check according to distro)
     case $distro in
-        ubuntu)
+        ubuntu|debian)
             check_ubuntu_last_update
         ;;
         sles)
@@ -383,7 +412,7 @@ function dataCapture() {
     fi
     
     # Perf captures
-    echo "Initializing performance capture"
+    echo -e "\e[1;36m→\e[0m Initializing performance monitoring..."
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
@@ -406,7 +435,7 @@ function dataCapture() {
     while [[ $remaining_seconds -gt 0 ]]; do
         
         if (( elapsed_seconds % 10 == 0 )); then
-            echo "Elapsed Time / Total: $elapsed_seconds / $duration (seconds)"
+            echo -e "  \e[0;90mCollecting... ${elapsed_seconds}s / ${duration}s\e[0m"
         fi
         
         # Generic outputs
@@ -437,19 +466,13 @@ function dataCapture() {
     # Log runmode
     echo "Runtime Info:     $runmode" >> $outputdir/info.txt
     
-    echo -e "\e[1;33mCapture Complete.\e[0m"
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m Capture complete"
     createReport
 }
 
 function createReport() {
-    echo -e "\e[1;33m"
-    cat << "EOF"
- =====================
-    Report Creation  
- =====================
-EOF
-    
-    echo "Creating tarball and cleaning the trash."
+    echo -e "\e[1;36m→\e[0m Creating archive..."
     # Create the zip file
     zip_filename="$(hostname)_$(date +'%Y%m%d_%H%M%S')_linuxaioperfcheck.tar.gz"
     tar cfz "$zip_filename" "$outputdir"
@@ -457,65 +480,228 @@ EOF
     # Remove the output directory
     rm -rf "$outputdir"
     
-    echo -e "\e[1;34mScript execution completed.\e[0m"
-    echo -e "\e[1;34mOutput file:\e[0m \e[1;32m$(pwd)/$zip_filename\e[0m"
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m Collection complete"
+    echo ""
+    echo -e "Output: \e[1;37m$(pwd)/$zip_filename\e[0m"
+    echo ""
 }
 
-# Define the defineCron function
+# ============================================================================
+# Cron Job Management
+# ============================================================================
+
+# Add a new cron job
 function defineCron() {
-    echo -e "\033[1;34m=====================================================================\033[0m"
-    echo -e "\033[1;32m[Cronjob Setup]\033[0m"
-    echo -e "\033[1;34m=====================================================================\033[0m"
-    echo "Do you want the job to run recurrently? (y/n): "
-    read -r choice
+    echo ""
+    echo -e "\e[1;37mCronjob Setup\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    echo -e "\e[1;37mCommon Schedules:\e[0m"
+    echo -e "  \e[1;32m1\e[0m  Every hour           \e[0;90m(0 * * * *)\e[0m"
+    echo -e "  \e[1;32m2\e[0m  Every 6 hours        \e[0;90m(0 */6 * * *)\e[0m"
+    echo -e "  \e[1;32m3\e[0m  Daily at 2:00 AM     \e[0;90m(0 2 * * *)\e[0m"
+    echo -e "  \e[1;32m4\e[0m  Daily at specific time"
+    echo -e "  \e[1;32m5\e[0m  Custom schedule"
+    echo ""
+    read -rp "Select schedule (1-5): " schedule_choice
     
-    if [[ "$choice" == [Yy] ]]; then
-        echo "Enter the hour - Every (0-23) hours: "
-        read -r hour
-        echo "and (0-60) Minutes: "
-        read -r minutes
-        
-        # Ask for the duration of the capture
-        echo "Enter the duration of the capture in seconds (between 10 and 900): "
-        read -r duration
-        if (( duration < 10 || duration > 900 )); then
-            echo "Invalid duration. Please enter a value between 10 and 900."
-            exit 1
-        fi
-        
-        # Add the cron job entry for recurrent run
-        crontab -l > mycron
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
-        crontab mycron
-        rm mycron
-        echo "Cron job added: $minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration"
-    else
-        echo "Enter the exact cron schedule."
-        echo "The schedule consists of five fields: minute hour day month day-of-week"
-        echo "For example, to run every day at 2:30 AM, enter: 30 2 * * *"
-        read -r cron_schedule
-        
-        # Ask for the duration of the capture
-        echo "Enter the duration of the capture in seconds (between 10 and 900): "
-        read -r duration
-        if (( duration < 10 || duration > 900 )); then
-            echo "Invalid duration. Please enter a value between 10 and 900."
-            exit 1
-        fi
-        
-        # Add the cron job entry for non-recurrent run
-        crontab -l > mycron
-        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
-        crontab mycron
-        rm mycron
-        echo "Cron job added: $cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration"
+    local cron_schedule=""
+    case $schedule_choice in
+        1)
+            cron_schedule="0 * * * *"
+            ;;
+        2)
+            cron_schedule="0 */6 * * *"
+            ;;
+        3)
+            cron_schedule="0 2 * * *"
+            ;;
+        4)
+            echo ""
+            read -rp "Enter hour (0-23): " hour
+            read -rp "Enter minute (0-59): " minute
+            
+            if ! [[ "$hour" =~ ^[0-9]+$ ]] || [ "$hour" -lt 0 ] || [ "$hour" -gt 23 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid hour. Must be 0-23."
+                return 1
+            fi
+            if ! [[ "$minute" =~ ^[0-9]+$ ]] || [ "$minute" -lt 0 ] || [ "$minute" -gt 59 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid minute. Must be 0-59."
+                return 1
+            fi
+            
+            cron_schedule="$minute $hour * * *"
+            ;;
+        5)
+            echo ""
+            echo -e "Enter cron schedule \e[0;90m(format: minute hour day month day-of-week)\e[0m"
+            echo -e "Example: \e[0;36m30 14 * * *\e[0m \e[0;90m(daily at 2:30 PM)\e[0m"
+            echo -e "         \e[0;36m0 */4 * * *\e[0m \e[0;90m(every 4 hours)\e[0m"
+            echo -e "         \e[0;36m0 9 * * 1\e[0m   \e[0;90m(Mondays at 9:00 AM)\e[0m"
+            read -rp "Schedule: " cron_schedule
+            
+            # Basic validation (5 fields)
+            if [ $(echo "$cron_schedule" | wc -w) -ne 5 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid cron schedule. Must have 5 fields."
+                return 1
+            fi
+            ;;
+        *)
+            echo -e "\e[1;31m[ERROR]\e[0m Invalid choice"
+            return 1
+            ;;
+    esac
+    
+    # Get duration
+    echo ""
+    read -rp "Capture duration (10-900 seconds): " duration
+    if ! [[ "$duration" =~ ^[0-9]+$ ]] || (( duration < 10 || duration > 900 )); then
+        echo -e "\e[1;31m[ERROR]\e[0m Invalid duration. Must be between 10 and 900 seconds."
+        return 1
     fi
     
-    # Restart the chronyd service
-    echo "Restarting cron service..."
-    systemctl restart cron
-    echo "cron service restarted."
+    # Ask about validation checks
+    echo ""
+    read -rp "Skip validation checks? \e[0;90m(recommended for automated runs)\e[0m (y/n): " skip_choice
+    local skip_flag=""
+    if [[ "$skip_choice" == [Yy] ]]; then
+        skip_flag=" --skip-checks"
+    fi
+    
+    # Build the command
+    local script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    local cron_command="$cron_schedule $script_path --quick -t $duration$skip_flag"
+    
+    # Add to crontab safely
+    local temp_cron=$(mktemp)
+    (crontab -l 2>/dev/null || true) > "$temp_cron"
+    
+    # Check if this exact job already exists
+    if grep -Fq "$script_path --quick -t $duration" "$temp_cron"; then
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m A similar job already exists"
+        read -rp "Add anyway? (y/n): " confirm
+        if [[ "$confirm" != [Yy] ]]; then
+            rm -f "$temp_cron"
+            echo "Cancelled."
+            return 0
+        fi
+    fi
+    
+    # Add comment and job
+    echo "" >> "$temp_cron"
+    echo "# LinuxAiO Performance Collector - Added $(date '+%Y-%m-%d %H:%M:%S')" >> "$temp_cron"
+    echo "$cron_command" >> "$temp_cron"
+    
+    # Install new crontab
+    if crontab "$temp_cron"; then
+        rm -f "$temp_cron"
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m Cron job added successfully"
+        echo ""
+        echo -e "  Schedule: \e[1;37m$cron_schedule\e[0m"
+        echo -e "  Duration: \e[1;37m${duration}s\e[0m"
+        echo -e "  Command:  \e[0;90m$script_path --quick -t $duration$skip_flag\e[0m"
+        echo ""
+        echo -e "To list jobs:   \e[0;36m./$(basename $0) --cron-list\e[0m"
+        echo -e "To remove jobs: \e[0;36m./$(basename $0) --cron-remove\e[0m"
+        echo ""
+    else
+        rm -f "$temp_cron"
+        echo -e "\e[1;31m[ERROR]\e[0m Failed to install cron job"
+        return 1
+    fi
 }
+
+# List cron jobs for this script
+function listCronJobs() {
+    local script_name=$(basename "${BASH_SOURCE[0]}")
+    
+    echo ""
+    echo -e "\e[1;37mScheduled Collection Jobs\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    
+    local jobs=$(crontab -l 2>/dev/null | grep -n "$script_name")
+    
+    if [ -z "$jobs" ]; then
+        echo -e "\e[1;33m[INFO]\e[0m No scheduled jobs found"
+        echo ""
+        return 0
+    fi
+    
+    echo "$jobs" | while IFS=: read -r line_num content; do
+        # Skip comments
+        if [[ "$content" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+        
+        echo -e "  \e[1;37mLine $line_num:\e[0m"
+        echo -e "  $content"
+        echo ""
+    done
+    
+    echo -e "To remove a job: \e[0;36m./$(basename $0) --cron-remove\e[0m"
+    echo ""
+}
+
+# Remove cron jobs for this script
+function removeCronJobs() {
+    local script_name=$(basename "${BASH_SOURCE[0]}")
+    
+    echo ""
+    echo -e "\e[1;37mRemove Scheduled Jobs\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    
+    local temp_cron=$(mktemp)
+    crontab -l 2>/dev/null > "$temp_cron"
+    
+    local jobs=$(grep -n "$script_name" "$temp_cron" | grep -v "^[[:space:]]*#")
+    
+    if [ -z "$jobs" ]; then
+        echo -e "\e[1;33m[INFO]\e[0m No scheduled jobs found"
+        echo ""
+        rm -f "$temp_cron"
+        return 0
+    fi
+    
+    echo "Found jobs:"
+    echo ""
+    echo "$jobs" | while IFS=: read -r line_num content; do
+        echo -e "  \e[1;37m[$line_num]\e[0m $content"
+    done
+    echo ""
+    
+    read -rp "Remove all LinuxAiO cron jobs? (y/n): " confirm
+    if [[ "$confirm" == [Yy] ]]; then
+        grep -v "$script_name" "$temp_cron" > "${temp_cron}.new"
+        
+        # Also remove associated comments
+        grep -v "# LinuxAiO Performance Collector" "${temp_cron}.new" > "$temp_cron"
+        
+        if crontab "$temp_cron"; then
+            echo ""
+            echo -e "\e[1;32m[OK]\e[0m Cron jobs removed"
+            echo ""
+        else
+            echo -e "\e[1;31m[ERROR]\e[0m Failed to update crontab"
+        fi
+    else
+        echo "Cancelled."
+    fi
+    
+    rm -f "$temp_cron" "${temp_cron}.new"
+}
+
+# ============================================================================
+# Resource Watchdog Implementation
+# ============================================================================
+
+# PID file location
+WATCHDOG_PID_FILE="/tmp/linuxaio_watchdog.pid"
+WATCHDOG_LOG_DIR="/tmp/linuxaio_watchdog_logs"
 
 # Setup Watchdog 
 setupResourceWatchdog() {
@@ -528,63 +714,57 @@ setupResourceWatchdog() {
     local io_threshold=80
     local duration=60
 
-    echo -e "\033[1;34m=====================================================================\033[0m"
-    echo -e "\033[1;32mChoose a mode for the Resource Watchdog:\033[0m"
-    echo -e "\033[1;34m=====================================================================\033[0m"
-    echo -e "\033[1;36m1 - Auto   \033[0m: Monitor CPU, memory, and disk at 80% Threshold. Duration: 60sec"
-    echo -e "\033[1;36m2 - Manual \033[0m: Choose resources and Thresholds. Duration: 1-300sec"
-    echo -e "\033[1;34m=====================================================================\033[0m"
-    read -p "$(echo -e "\033[1;33mEnter 1 or 2: \033[0m")" mode
+    echo ""
+    echo -e "\e[1;37mResource Watchdog Mode\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    echo -e "  \e[1;32m1\e[0m  Auto   - CPU, memory, disk at 80% threshold (60s duration)"
+    echo -e "  \e[1;32m2\e[0m  Manual - Choose resources and thresholds (1-300s duration)"
+    echo ""
+    read -p "Select mode (1 or 2): " mode
 
 
     if [[ "$mode" != "1" && "$mode" != "2" ]]; then
-        echo "Invalid choice. Exiting."
+        echo -e "\e[1;31m[ERROR]\e[0m Invalid choice"
         exit 1
     fi
 
     if [ "$mode" == "2" ]; then
-        echo -e "\033[1;34m============================================\033[0m"
-        echo -e "\033[1;32mResource Monitoring Choices:\033[0m"
-        echo -e "\033[1;34m============================================\033[0m"
+        echo ""
+        echo -e "\e[1;37mManual Configuration\e[0m"
+        echo ""
         
-        read -p "$(echo -e "\033[1;36mMonitor CPU? (yes/no):\033[0m ")" cpu_choice
-        
+        read -p "Monitor CPU? (yes/no): " cpu_choice
         if [ "$cpu_choice" == "yes" ]; then
             monitor_cpu=1
-            read -p "$(echo -e "\033[1;33mSet CPU threshold (0-100):\033[0m ")" cpu_threshold
+            read -p "  CPU threshold (0-100): " cpu_threshold
         fi
         
-        read -p "$(echo -e "\033[1;36mMonitor Memory? (yes/no):\033[0m ")" mem_choice
-        
+        read -p "Monitor Memory? (yes/no): " mem_choice
         if [ "$mem_choice" == "yes" ]; then
             monitor_mem=1
-            read -p "$(echo -e "\033[1;33mSet Memory threshold (0-100):\033[0m ")" mem_threshold
+            read -p "  Memory threshold (0-100): " mem_threshold
         fi
         
-        read -p "$(echo -e "\033[1;36mMonitor Disk IO? (yes/no):\033[0m ")" io_choice
-        
+        read -p "Monitor Disk IO? (yes/no): " io_choice
         if [ "$io_choice" == "yes" ]; then
             monitor_io=1
-            read -p "$(echo -e "\033[1;33mSet Disk IO threshold (0-100):\033[0m ")" io_threshold
+            read -p "  Disk IO threshold (0-100): " io_threshold
         fi
     
         while true; do
-            read -p "$(echo -e "\033[1;36mDuration (1-300sec): \033[0m ")" duration
-
-            # Check if the input is an integer
+            read -p "Capture duration (1-300 seconds): " duration
             if [[ "$duration" =~ ^[0-9]+$ ]]; then
-                # Check if the input is between 0 and 300
                 if [ "$duration" -ge 1 ] && [ "$duration" -le 300 ]; then
-                break
+                    break
                 else
-                echo -e "\033[1;31mInvalid input: Please enter a value between 1 and 300.\033[0m"
+                    echo -e "  \e[1;31m[ERROR]\e[0m Value must be between 1 and 300"
                 fi
             else
-                echo -e "\033[1;31mInvalid input: Please enter an integer.\033[0m"
+                echo -e "  \e[1;31m[ERROR]\e[0m Please enter a valid number"
             fi
         done
-        
-        echo -e "\033[1;34m============================================\033[0m"
+        echo ""
     
     else
         monitor_cpu=1
@@ -596,12 +776,24 @@ setupResourceWatchdog() {
         duration=60
     fi
 
-    $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &
+    # Start watchdog in background
+    runResourceWatchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &
+    local watchdog_pid=$!
     
+    # Save PID to file
+    echo "$watchdog_pid" > "$WATCHDOG_PID_FILE"
+    
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m Watchdog started in background"
+    echo -e "  PID: \e[1;37m$watchdog_pid\e[0m"
+    echo -e "  Log: \e[1;37m$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log\e[0m"
+    echo ""
+    echo -e "To check status: \e[0;36m./$(basename $0) --watchdog-status\e[0m"
+    echo -e "To stop:         \e[0;36m./$(basename $0) --watchdog-stop\e[0m"
+    echo ""
 }
 
 runResourceWatchdog() {
-
     local monitor_cpu=$1
     local monitor_mem=$2
     local monitor_io=$3
@@ -609,73 +801,182 @@ runResourceWatchdog() {
     local mem_threshold=$5
     local io_threshold=$6
     local duration=$7
-    local LOG_FILE=$(pwd)/LinuxAiO_watchdog_$(date +'%Y%m%d_%H%M%S').log
-    local start_time=$(date +%s)
-    local reset_interval=3600 # 1 Hour
-  
-    echo -e "\033[1;34mResource watchdog started. \033[1;32mPID: $$\033[0m"
+    
+    # Setup logging
+    mkdir -p "$WATCHDOG_LOG_DIR"
+    local LOG_FILE="$WATCHDOG_LOG_DIR/watchdog_$BASHPID.log"
+    local TEMP_IOSTAT="/tmp/linuxaio_iostat_$BASHPID.tmp"
+    
+    # Log startup
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog started (PID: $BASHPID)" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Monitoring: CPU=$monitor_cpu MEM=$monitor_mem IO=$monitor_io" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Thresholds: CPU=${cpu_threshold}% MEM=${mem_threshold}% IO=${io_threshold}%" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture duration: ${duration}s" >> "$LOG_FILE"
 
+    # Trap to cleanup on exit
+    trap "rm -f '$TEMP_IOSTAT' '$WATCHDOG_PID_FILE'" EXIT SIGTERM SIGINT
+
+    # Main monitoring loop
     while true; do
-        local highIO=0
+        local trigger=0
+        local trigger_reason=""
         local cpu_util=0
         local mem_util=0
+        local io_util=0
 
+        # Check CPU
         if [ "$monitor_cpu" == "1" ]; then
-            cpu_util=$(mpstat 1 1 | awk '/Average:/ {print 100 - $NF}')
-            echo "$(date '+%Y-%m-%d %H:%M:%S ')Current CPU Utilization: $cpu_util%" >> "$LOG_FILE"
-        fi
-
-        if [ "$monitor_mem" == "1" ]; then
-            mem_util=$(free | awk '/Mem:/ {print 100 -(($7 / $2) * 100)}')
-            echo "$(date '+%Y-%m-%d %H:%M:%S ')Current Memory Utilization: $mem_util%" >> "$LOG_FILE"
-        fi
-
-        if [ "$monitor_io" == "1" ]; then
-            iostat -d -x 1 2 | grep -v Device | grep -v cpu | grep -v CPU > .iostat.txt
-            if [ -f .iostat.txt ]; then
-                while read -r line; do
-                    if [[ -n "$line" ]]; then
-                        local last_column=$(echo "$line" | awk '{print $NF}')
-                        if (( $(echo "$last_column > $io_threshold" | bc -l) )); then
-                            highIO=1
-                            break
-                        fi
-                    fi
-                done < .iostat.txt
+            cpu_util=$(mpstat 1 1 2>/dev/null | awk '/Average:/ {printf "%.0f", 100 - $NF}')
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] CPU: ${cpu_util}%" >> "$LOG_FILE"
+            
+            if [ -n "$cpu_util" ] && [ "$cpu_util" -gt "$cpu_threshold" ]; then
+                trigger=1
+                trigger_reason="CPU ${cpu_util}% > ${cpu_threshold}%"
             fi
-            rm -f .iostat.txt
         fi
 
-        if (( $(echo "$cpu_util > $cpu_threshold" | bc -l) == 1 || $(echo "$mem_util > $mem_threshold" | bc -l) == 1 || $highIO == 1 )); then
-            echo "$(date '+%Y-%m-%d %H:%M:%S ')Resource utilization above thresholds. Running Collector" >> "$LOG_FILE"
-            $(pwd)/linux_aio_perfcheck.sh --runwatchdog $duration $monitor_cpu $monitor_mem $monitor_io $cpu_threshold $mem_threshold $io_threshold
-            exit 1
+        # Check Memory
+        if [ "$monitor_mem" == "1" ]; then
+            mem_util=$(free 2>/dev/null | awk '/Mem:/ {printf "%.0f", 100 - (($7 / $2) * 100)}')
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] Memory: ${mem_util}%" >> "$LOG_FILE"
+            
+            if [ -n "$mem_util" ] && [ "$mem_util" -gt "$mem_threshold" ]; then
+                trigger=1
+                trigger_reason="${trigger_reason:+$trigger_reason, }Memory ${mem_util}% > ${mem_threshold}%"
+            fi
         fi
-        
-        # Check if 1 hour has passed
-        local current_time=$(date +%s)
-        local elapsed_time=$((current_time - start_time))
 
-        if [ $elapsed_time -ge $reset_interval ]; then
-            echo "$(date '+%Y-%m-%d %H:%M:%S ')One hour has passed. Exiting." >> $LOG_FILE
-            $(pwd)/linux_aio_perfcheck.sh --watchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &    
-            find . -maxdepth 1 -type f -name "LinuxAiO_watchdog_*.log" -mmin +121 -exec rm -f {} \;
+        # Check Disk IO
+        if [ "$monitor_io" == "1" ]; then
+            iostat -d -x 1 2 2>/dev/null | grep -E '^(sd|nvme)' > "$TEMP_IOSTAT"
+            
+            if [ -s "$TEMP_IOSTAT" ]; then
+                io_util=$(awk '{if ($NF > max) max = $NF} END {printf "%.0f", max}' "$TEMP_IOSTAT")
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] Disk IO: ${io_util}%" >> "$LOG_FILE"
+                
+                if [ -n "$io_util" ] && [ "$io_util" -gt "$io_threshold" ]; then
+                    trigger=1
+                    trigger_reason="${trigger_reason:+$trigger_reason, }IO ${io_util}% > ${io_threshold}%"
+                fi
+            fi
+        fi
+
+        # Trigger collection if threshold exceeded
+        if [ "$trigger" == "1" ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [TRIGGER] Threshold exceeded: $trigger_reason" >> "$LOG_FILE"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [ACTION] Starting data collection (${duration}s)" >> "$LOG_FILE"
+            
+            # Set runmode for the collection
+            runmode="Watchdog Triggered - $trigger_reason - $duration seconds"
+            
+            # Call dataCapture directly (no script spawning!)
+            dataCapture "$duration" "$high_res_disk_metrics"
+            
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Collection complete" >> "$LOG_FILE"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog exiting (triggered)" >> "$LOG_FILE"
+            
+            # Clean up and exit
+            rm -f "$TEMP_IOSTAT" "$WATCHDOG_PID_FILE"
             exit 0
         fi
 
+        # Sleep before next check
         sleep 5
     done
 }
 
+# Check watchdog status
+checkWatchdogStatus() {
+    if [ ! -f "$WATCHDOG_PID_FILE" ]; then
+        echo ""
+        echo -e "\e[1;33m[INFO]\e[0m No watchdog is currently running"
+        echo ""
+        return 1
+    fi
+    
+    local pid=$(cat "$WATCHDOG_PID_FILE")
+    
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m Watchdog is running"
+        echo -e "  PID: \e[1;37m$pid\e[0m"
+        
+        # Show log file if it exists
+        local log_file="$WATCHDOG_LOG_DIR/watchdog_${pid}.log"
+        if [ -f "$log_file" ]; then
+            echo -e "  Log: \e[1;37m$log_file\e[0m"
+            echo ""
+            echo "Recent activity:"
+            tail -n 10 "$log_file" | while read line; do
+                echo "  $line"
+            done
+        fi
+        echo ""
+        return 0
+    else
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m Watchdog PID file exists but process is not running"
+        echo "Cleaning up stale PID file..."
+        rm -f "$WATCHDOG_PID_FILE"
+        echo ""
+        return 1
+    fi
+}
+
+# Stop watchdog
+stopWatchdog() {
+    if [ ! -f "$WATCHDOG_PID_FILE" ]; then
+        echo ""
+        echo -e "\e[1;33m[INFO]\e[0m No watchdog is currently running"
+        echo ""
+        return 1
+    fi
+    
+    local pid=$(cat "$WATCHDOG_PID_FILE")
+    
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo ""
+        echo -e "\e[1;36m→\e[0m Stopping watchdog (PID: $pid)..."
+        kill "$pid" 2>/dev/null
+        
+        # Wait for process to terminate
+        local count=0
+        while ps -p "$pid" > /dev/null 2>&1 && [ $count -lt 10 ]; do
+            sleep 0.5
+            ((count++))
+        done
+        
+        # Force kill if still running
+        if ps -p "$pid" > /dev/null 2>&1; then
+            kill -9 "$pid" 2>/dev/null
+        fi
+        
+        rm -f "$WATCHDOG_PID_FILE"
+        echo -e "\e[1;32m[OK]\e[0m Watchdog stopped"
+        echo ""
+        return 0
+    else
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m Watchdog process not found"
+        echo "Cleaning up stale PID file..."
+        rm -f "$WATCHDOG_PID_FILE"
+        echo ""
+        return 1
+    fi
+}
+
 # Function to display a disclaimer and get user's agreement
 function displayDisclaimer() {
-    echo -e "\e[1;33m"
-    echo "WARNING: Setting up a resource watchdog will run a separate process in the background."
-    echo "This process will monitor CPU, memory, and disk IO utilization."
-    echo -e "Do you agree to continue? (y/n) \e[0m"
-    read -r choice
+    echo ""
+    echo -e "\e[1;33m[WARNING]\e[0m Resource watchdog will run in the background"
+    echo ""
+    echo "  • Monitors CPU, memory, and disk IO utilization"
+    echo "  • Triggers data collection when thresholds are exceeded"
+    echo "  • Runs as a separate background process"
+    echo ""
+    read -rp "Continue? (y/n): " choice
     if [[ "$choice" != [Yy] ]]; then
-        echo "Aborted. Exiting..."
+        echo -e "\e[1;31m[ERROR]\e[0m Operation cancelled"
         exit 0
     else
         setupResourceWatchdog
@@ -688,30 +989,115 @@ function toggleHighResDiskMetrics() {
     else
         high_res_disk_metrics="OFF"
     fi
-    echo "High Resolution Disk Metrics: $high_res_disk_metrics"
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m High resolution disk metrics: \e[1;37m$high_res_disk_metrics\e[0m"
+    echo ""
+}
+
+# Non-interactive validation for command-line mode
+function validateNonInteractive() {
+    # Run locale validation
+    localeValidation
+    
+    # Run package validation
+    echo ""
+    echo -e "\e[1;37mChecking dependencies...\e[0m"
+    
+    # Determine package manager
+    distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+    case "$distro" in
+        ubuntu|debian)
+            package_manager="apt-get"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        sles)
+            package_manager="zypper"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        rhel|centos|ol)
+            package_manager="yum"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        *)
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Unsupported distribution: $distro"
+            echo "Supported distributions: Ubuntu, Debian, RHEL, CentOS, Oracle Linux, SLES"
+            echo ""
+            echo "To bypass this check, use: --skip-checks"
+            exit 1
+        ;;
+    esac
+    
+    # Function to check if a package is installed (inline version)
+    check_pkg() {
+        local pkg=$1
+        if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
+            dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
+        else
+            rpm -q "$pkg" >/dev/null 2>&1
+        fi
+    }
+    
+    missing_packages=()
+    
+    if check_pkg "$sysstat_package_name"; then
+        echo -e "  \e[1;32m✓\e[0m sysstat"
+    else
+        echo -e "  \e[1;31m✗\e[0m sysstat"
+        missing_packages+=("$sysstat_package_name")
+    fi
+    
+    if check_pkg "$iotop_package_name"; then
+        echo -e "  \e[1;32m✓\e[0m iotop"
+    else
+        echo -e "  \e[1;31m✗\e[0m iotop"
+        missing_packages+=("$iotop_package_name")
+    fi
+    
+    # If packages are missing, exit with error
+    if [ ${#missing_packages[@]} -gt 0 ]; then
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Missing required packages: ${missing_packages[*]}"
+        echo "Please install them manually or run in interactive mode for installation prompts."
+        exit 1
+    fi
+    
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m All dependencies installed"
 }
 
 function displayMenu(){
     # Menu for selecting run mode
-    echo -e "\e[1;33m"
-    cat << "EOF"
-=====================
-   Select Run Mode  
-=====================
-EOF
-    
-    echo -e "\033[1;34m=================================================================================================\033[0m"
-    echo -e "\033[1;32m1 - Collect live data            \e[1;31m                    (Now)"
-    echo -e "\033[1;32m2 - Collect data via watchdog    \e[1;31m                    (Triggered by resource utilization)"
-    echo -e "\033[1;32m3 - Collect data via cron        \e[1;31m                    (At a specific time)"
-    echo -e "\033[1;32m4 - Toggle High Resolution Disk Metrics "
-    echo -e "\033[1;32m    (50ms samples and limited to live data capture)\e[1;35m  (Current: $high_res_disk_metrics)"
-    echo -e "\033[1;34m=================================================================================================\033[0m"
+    echo ""
+    echo -e "\e[1;37mSelect Run Mode\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    echo -e "  \e[1;32m1\e[0m  Collect live data"
+    echo -e "     \e[0;90mImmediate data collection\e[0m"
+    echo ""
+    echo -e "  \e[1;32m2\e[0m  Collect via watchdog"
+    echo -e "     \e[0;90mTriggered by resource utilization threshold\e[0m"
+    echo ""
+    echo -e "  \e[1;32m3\e[0m  Collect via cron"
+    echo -e "     \e[0;90mScheduled at specific time\e[0m"
+    echo ""
+    echo -e "  \e[1;32m4\e[0m  Toggle high resolution disk metrics"
+    echo -e "     \e[0;90m50ms samples (live capture only) - Current: \e[1;37m$high_res_disk_metrics\e[0m"
+    echo ""
+    echo -e "  \e[1;31m0\e[0m  Exit"
     echo ""
 
-    read -p "$(echo -e "\033[1;36mEnter the mode number: \033[0m ")" run_mode
+    read -p "Select option (0-4): " run_mode
     
     case $run_mode in
+        0)
+            echo ""
+            echo "Exiting..."
+            exit 0
+        ;;
         1)
             liveData
         ;;
@@ -727,7 +1113,7 @@ EOF
             motd  # Redisplay the menu after toggling
         ;;
         *)
-            echo "Invalid mode number."
+            echo -e "\e[1;31m[ERROR]\e[0m Invalid option"
             exit 1
         ;;
     esac
@@ -759,29 +1145,25 @@ while [[ $# -gt 0 ]]; do
             HIGH_RES="${1#*=}"
             shift
             ;;
-        --watchdog)
-            if [ "$2" = "" ]; then
-                echo "Error: The --watchdog command is for interactive use only."
-                echo "Please use the interactive menu to configure the watchdog."
-                exit 1
-            fi
-            COMMAND="$1"
-            # Store all watchdog parameters
-            if [ $# -ge 8 ]; then
-                WATCHDOG_PARAMS=("$2" "$3" "$4" "$5" "$6" "$7" "$8")
-                shift 8
-            else
-                echo "Error: The --watchdog command is for interactive use only."
-                echo "Please use the interactive menu to configure the watchdog."
-                exit 1
-            fi
-            ;;
-        --runwatchdog)
-            COMMAND="$1"
-            # Store all remaining parameters for dataCapture
+        --skip-checks)
+            skip_checks="ON"
             shift
-            WATCHDOG_TRIGGER_PARAMS=("$@")
-            break  # Exit the parsing loop as we want to keep all remaining args
+            ;;
+        --watchdog-status)
+            checkWatchdogStatus
+            exit $?
+            ;;
+        --watchdog-stop)
+            stopWatchdog
+            exit $?
+            ;;
+        --cron-list)
+            listCronJobs
+            exit $?
+            ;;
+        --cron-remove)
+            removeCronJobs
+            exit $?
             ;;
         --cronjob)
             COMMAND="$1"
@@ -789,12 +1171,13 @@ while [[ $# -gt 0 ]]; do
                 DURATION="$2"
                 shift 2
             else
-                echo "Error: --cronjob requires a duration parameter"
+                echo ""
+                echo -e "\e[1;31m[ERROR]\e[0m --cronjob requires a duration parameter"
                 exit 1
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 2.1.2"
+            echo "Linux All-in-One Performance Collector, version 2.1.3"
             exit 0
             ;;
         -h|--help)
@@ -802,7 +1185,9 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Unknown option: $1"
+            echo ""
             print_usage
             exit 1
             ;;
@@ -815,13 +1200,15 @@ if [ -n "$COMMAND" ]; then
         --quick|--collect-now)
             # Validate duration
             if [ -z "$DURATION" ] || ! [[ "$DURATION" =~ ^[0-9]+$ ]] || [ "$DURATION" -lt 10 ] || [ "$DURATION" -gt 900 ]; then
-                echo "Error: Duration must be between 10 and 900 seconds"
+                echo ""
+                echo -e "\e[1;31m[ERROR]\e[0m Duration must be between 10 and 900 seconds"
                 exit 1
             fi
             
             # Validate high resolution setting
             if [ "$HIGH_RES" != "ON" ] && [ "$HIGH_RES" != "OFF" ]; then
-                echo "Error: High resolution disk counters must be ON or OFF"
+                echo ""
+                echo -e "\e[1;31m[ERROR]\e[0m High resolution disk counters must be ON or OFF"
                 exit 1
             fi
             
@@ -832,24 +1219,23 @@ if [ -n "$COMMAND" ]; then
                 runmode="Interactive (Collect Now) Data Capture - $DURATION seconds"
             fi
             
+            # Run validation checks unless --skip-checks is enabled
+            if [ "$skip_checks" == "OFF" ]; then
+                validateNonInteractive
+            fi
+            
             # Call dataCapture with validated parameters
             dataCapture "$DURATION" "$HIGH_RES"
-            ;;
-        --watchdog)
-            if [ -n "${WATCHDOG_PARAMS[*]}" ]; then
-                runResourceWatchdog "${WATCHDOG_PARAMS[@]}"
-            else
-                # Called from interactive menu - all parameters are in $@
-                runResourceWatchdog $@
-            fi
-            ;;
-        --runwatchdog)
-            # Called when watchdog triggers a collection
-            dataCapture "${WATCHDOG_TRIGGER_PARAMS[@]}"
             ;;
         --cronjob)
             # Set runmode for cronjob
             runmode="Cron Job Data Capture - $DURATION seconds"
+            
+            # Run validation checks unless --skip-checks is enabled
+            if [ "$skip_checks" == "OFF" ]; then
+                validateNonInteractive
+            fi
+            
             # Call dataCapture with duration
             dataCapture "$DURATION" "$HIGH_RES"
             ;;

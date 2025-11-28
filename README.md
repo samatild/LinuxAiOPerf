@@ -1,171 +1,251 @@
-# Linux AIO Performance Checker
+# Linux AIO Performance Collector
 
-[![Latest Release](https://img.shields.io/badge/release-v2.1.0-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
+[![Latest Release](https://img.shields.io/badge/release-v2.1.2-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![Docker](https://img.shields.io/badge/docker-available-blue.svg)](https://hub.docker.com/r/samuelmatildes/linuxaioperf)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
 <p float="left">
-
   <img src="assets/linuxaiologo.png" width="400" height="auto" />
-
 </p>
 
-Linux AIO Performance Checker is a script that collects performance data from a Linux system and generates a report in HTML format. The report can be uploaded to a web application that will display the data in a user-friendly way.
+A comprehensive performance data collector for Linux systems. Captures CPU, memory, storage, and system metrics for analysis via web interface.
 
 ## Latest Release
-🚀 **Version 2.1.1** - 15/Sep 2025
-- Dynamic controlls for Process Stats Page
 
-## Key Features
+**Version 2.1.2** - November 2025
+- Refactored resource watchdog with PID tracking and management
+- Improved cron job setup with templates and management commands
+- Added Debian distribution support
+- Modern Python-style CLI output
+- Skip validation checks flag for automation
 
-- All-in-one Linux Performance Collector Script.
-- Report generated directly over Web Application.
-- Fast, simple and user friendly.
+## Web Application
+
+**View your performance data:**
+
+### https://linuxaioperf.matildes.dev/
+
+The web application generates interactive HTML reports from collected data. Reports are automatically deleted after 10 minutes.
+
+**Alternative - Run locally with Docker:**
+```bash
+docker run -p 8000:80 samuelmatildes/linuxaioperf:latest
+# Access at http://localhost:8000
+```
+
+## Quick Start
+
+Download and run the collector:
+
+```bash
+# Download
+wget https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/build/linux_aio_perfcheck.sh
+
+# Make executable
+chmod +x linux_aio_perfcheck.sh
+
+# Run (interactive mode)
+sudo ./linux_aio_perfcheck.sh
+```
+
+Upload the generated .tar.gz file to the web application for analysis.
+
+## Requirements
+
+**Timezone:** LC_TIME must be set to `en_US.UTF-8`, `en_GB.UTF-8`, `C.UTF-8`, or `POSIX`. The script validates this and provides configuration instructions if needed.
+
+**Packages:** Requires `sysstat` and `iotop`. The script will detect missing packages and offer to install them automatically.
+
+**Supported Distributions:**
+- Debian 11/12
+- Ubuntu 18.04/20.04/22.04/24.04
+- Red Hat Enterprise Linux 7/8/9
+- Oracle Linux 7/8
+- CentOS 7/8
+- SUSE Linux Enterprise Server 12/15
+
+## Usage
+
+### Interactive Mode
+
+Run without arguments to access the interactive menu:
+
+```bash
+sudo ./linux_aio_perfcheck.sh
+```
+
+Choose from:
+1. **Collect live data** - Immediate capture (10-900 seconds)
+2. **Collect via watchdog** - Trigger on resource threshold
+3. **Collect via cron** - Schedule at specific times
+4. **Toggle high resolution disk metrics** - 50ms sampling (live mode only)
+
+### Command Line Mode
+
+Quick collection without prompts:
+
+```bash
+# Quick 60-second collection
+sudo ./linux_aio_perfcheck.sh --quick -t 60
+
+# With high-resolution disk metrics
+sudo ./linux_aio_perfcheck.sh --quick -t 120 -hres ON
+
+# Skip validation checks (for automation)
+sudo ./linux_aio_perfcheck.sh --quick -t 60 --skip-checks
+```
+
+### Watchdog Management
+
+Monitor resources and trigger collection when thresholds are exceeded:
+
+```bash
+# Check watchdog status
+./linux_aio_perfcheck.sh --watchdog-status
+
+# Stop running watchdog
+./linux_aio_perfcheck.sh --watchdog-stop
+```
+
+**Watchdog Features:**
+- Monitors CPU, memory, and disk I/O utilization
+- Configurable thresholds (default: 80%)
+- Two modes: Auto (80% threshold, 60s capture) or Manual (custom settings)
+- Runs as background process with PID tracking
+- Logs activity to `/tmp/linuxaio_watchdog_logs/watchdog_PID.log`
+- Triggers data collection automatically when thresholds exceeded
+- Clean exit after collection completes
+
+### Cron Job Management
+
+Schedule automated collections:
+
+```bash
+# List scheduled jobs
+./linux_aio_perfcheck.sh --cron-list
+
+# Remove scheduled jobs
+./linux_aio_perfcheck.sh --cron-remove
+```
+
+**Cron Features:**
+- Template-based scheduling (hourly, every 6 hours, daily, custom)
+- Full validation of schedules and duration
+- Duplicate detection
+- Uses absolute paths (works from any directory)
+- Option to skip validation checks for reliability
+- Easy management with list/remove commands
+
+**Schedule Templates:**
+- Every hour: `0 * * * *`
+- Every 6 hours: `0 */6 * * *`
+- Daily at 2:00 AM: `0 2 * * *`
+- Daily at custom time
+- Custom cron expression
+
+## Collection Modes
+
+### Live Data
+
+Immediate data capture for troubleshooting active issues.
+
+**Duration:** 10-900 seconds
+
+**Use when:** Problem is happening now
+
+**Command:**
+```bash
+sudo ./linux_aio_perfcheck.sh --quick -t 60
+```
+
+### Watchdog
+
+Background monitoring that triggers collection when resource utilization exceeds thresholds.
+
+**Duration:** 1-300 seconds (capture duration)
+
+**Use when:** Problem happens unpredictably
+
+**Features:**
+- Single process architecture (no recursive spawning)
+- PID file tracking at `/tmp/linuxaio_watchdog.pid`
+- Structured logging with [INFO], [METRIC], [TRIGGER] prefixes
+- Graceful shutdown with cleanup
+- Status and stop commands for management
+
+### Cron
+
+Scheduled collections at specific times or intervals.
+
+**Duration:** 10-900 seconds
+
+**Use when:** Problem occurs at known times
+
+**Features:**
+- No service restart required
+- Safe crontab manipulation with duplicate detection
+- Timestamped comments in crontab for tracking
+- Recommended to use with `--skip-checks` flag
+
+## Collected Data
+
+| Category | Metrics |
+|----------|---------|
+| CPU | mpstat, pidstat, uptime, cpuinfo |
+| Memory | vmstat, free, meminfo |
+| Storage | iostat, df, lsblk, parted, LVM (pv/vg/lv), /proc/diskstats, iotop, lsscsi |
+| System | OS info, kernel parameters, modules, SELinux/AppArmor status |
+
+**High Resolution Disk Metrics** (optional):
+- 50ms sampling interval from `/proc/diskstats`
+- Available only in live data mode
+- Significantly increases data volume
+
+## Privacy
+
+**No PII collected:** No personal, organizational, or computer-identifying information is captured.
+
+**Data retention:** Uploaded data is processed in-memory on the web server. Generated HTML reports are automatically deleted after 10 minutes. No database storage.
+
+**Client-side processing:** Report visualization uses JavaScript executed in your browser. No data is sent back to the server during viewing.
+
+## Command Reference
+
+```
+Commands:
+  --quick                        Quick data collection mode
+  --watchdog-status              Check watchdog status
+  --watchdog-stop                Stop running watchdog
+  --cron-list                    List scheduled cron jobs
+  --cron-remove                  Remove scheduled cron jobs
+  --version                      Show version information
+
+Options:
+  -t, --time SECONDS            Duration in seconds (10-900)
+  -hres VALUE                   Enable/disable high resolution disk (ON/OFF)
+  --skip-checks                 Skip locale and package validation
+
+Examples:
+  ./linux_aio_perfcheck.sh --quick -t 60
+  ./linux_aio_perfcheck.sh --quick -t 120 --skip-checks
+  ./linux_aio_perfcheck.sh --watchdog-status
+  ./linux_aio_perfcheck.sh --cron-list
+```
 
 ## Documentation
 
-For detailed documentation and usage instructions, please visit:
-- 📚 [Project Wiki](https://github.com/samatild/LinuxAiOPerf/wiki)
-
-## Quick Start (Instructions)
-
-1. **⬇️ Download and execute the script:**
-
-   ```bash
-    # Download
-    wget https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/build/linux_aio_perfcheck.sh
-    
-    # Make it executable
-    sudo chmod +x linux_aio_perfcheck.sh
-    
-    # Run it
-    sudo ./linux_aio_perfcheck.sh
-   ```
-
-
-
-2. **📤 Upload the generated ZIP file:**
-   ### [➡️ Linux AIO Perf Checker Web Application](https://linuxaioperf.matildes.dev/)
-
-   **🐳 Alternative: Run locally with Docker:**
-   ```bash
-   # Pull and run the Docker image
-   docker run -p 8000:80 samuelmatildes/linuxaioperf:latest
-   
-   # Then access the web interface at http://localhost:8000
-   ```
-
-## Command-Line Usage
-
-Alternatively, the script can be run directly from the command line with various options:
-
-Collect a 30 seconds quick report:
-```
-./linux_aio_perfcheck.sh --quick -t 30
-```
-
-Collect a 60 seconds quick report with high resolution disk metrics:
-```
-./linux_aio_perfcheck.sh --quick -t 60 -hres ON
-```
-
-
-## Requirements
-⚠️ **Timezone:** Compatible LC_TIME formats are: en_US.UTF-8 ; en_GB.UTF-8 ; C.UTF-8 ; POSIX ; The script will validate this requirement at the beginning and will provide instructions to the user on how to change it.
-
-⚠️ **Packages:** sysstat and iotop packages are required for the script to execute. If they are not installed, the script will install them automatically. If the script is not able to install them, it will exit with an error message.
-
-
-## Run Modes
-
-
-| Run Mode | What it does | For what occasion |  
-|----------|----------|----------|
-| Collect live data | It will collect data right away during a timespan from 10-900sec  | Problem is happening now |
-| Collect data via watchdog (Triggered by High CPU, Memory, or Disk IO) | It will setup a watchdog that will keep an eye for resource Utilization. Auto or Manual modes available | For when you don't know when the problem is going to happen. | 
-| Collect data via cron (At a specific time)  | It will setup a cronjob based on user instructions. There are 2 different cronjobs: Recurrent will repeat the collection based on user selection. Not Recurrent will trigger the data collection at a specific time.  | For when you know when the problem happens. |
- 
-   > ⚠️ **Attention:** When running on the 3rd mode (cronjob) the script will create a crontab entry but will not delete it. If you want to delete it you will need to do it manually. Don't forget to restart chronyd service after deleting the crontab entry.
-
-### [Mode] Live Data
-
-```
-1. Live data mode is intended to initiate immediate capture.
-2. User needs to select a duration between 10 seconds and 900 seconds (15min)
-3. Report will be based on current metrics and will not contain historical data.
-```
-### [Mode] Watchdog
-
-```
-1. Watchdog is intended for scenarios when the user doesn't know when the problem is going to happen.
-2. If the user knows what resource is affected , he can decide which resource to monitor.
-3. User can also define a custom Threshold to monitor each resource (eg: 100% of CPU). On this mode, the user can select the duration of the collection between 1 and 300 seconds.
-4. Default options will monitor CPU, Memory and Disk activity and will trigger the collection at 80% with the default duration of 60 seconds.
-5. Watchdog will log its activity on a file located in current working dir named LinuxAiO_watchdog_$(date +'%Y%m%d_%H%M%S').log
-6. Watchdog will automatically restart itself every hour for regular housekeeping.
-7. Watchdog will run until user stops it or threshold is reached.
-```
-### [Mode] Cronjob
-
-```
-1. Cron is intended for scenarios where the user knows at which time the problem is going to happen.
-2. User will be prompted if cronjob needs to be reccurent (every hour, every day) or not.
-3. Cronjob will be setup according to user selection and will run until user deletes the cron entry.
-```
-
-## Compatibility
-
-The collector script is compatible with most modern Linux distributions as it uses standard OS commands to collect data.
-
-It as been tested with the following Linux distributions:
-
-- Ubuntu 18.04
-- Ubuntu 20.04
-- Red Hat Enterprise Linux 7
-- Red Hat Enterprise Linux 8
-- Oracle Linux 7
-- Oracle Linux 8
-- CentOS 7
-- CentOS 8
-- SUSE Linux Enterprise Server 15
-- SUSE Linux Enterprise Server 12
-
-
-## What data is collected?
-
-The following data is collected:
-
-| Resource Type | Collected Data |
-|----------|----------|
-| CPU  | mpstat, pidstat, uptime, cpuinfo  |
-| Memory   | vmstat, free, meminfo   |
-| Storage   | iostat, df -h, lsblk -f, parted -l, pvdisplay, vgdisplay, lvdisplay, pvscan, vgscan, lvscan, ls -l /dev/mapper, iotop, lsscsi, /proc/diskstats    |
-| Generic OS information   | date, top, ps -H, sar, os-release, last installed updates, sysctl -a, lsmod, selinux/apparmor dettection |
-
-> ✅ **PII Notice:** No Personal, organization, or computer identifiable information is collected.
-
-
-## Data privacy
-
-The uploaded data will not be stored on the web server. The data is stored in a temporary directory on the web server and is deleted after 10 minutes.
-
-Part of the data processing requires the execution of JavaScript code on the client-side. The JavaScript code is executed in the browser and does not send any data to the web server.
-
-## Data Retention Policy
-
-Every report will have its own unique ID. The UID is randomly generated and is not related to the data contained in the report. The UID is used to identify the report and to allow the user to view it. The UID is not stored in the database. 
-
-Each time a user uploads a ZIP file containing performance data, the data is deleted once report is fully generated. The report HTML file will get deleted after 10 minutes.
+For detailed documentation and usage instructions:
+- [Project Wiki](https://github.com/samatild/LinuxAiOPerf/wiki)
 
 ## Credits
 
-This project was developed by [Samuel Matildes](https://github.com/samatild)
+Developed by [Samuel Matildes](https://github.com/samatild)
 
-The code makes use of the following open-source projects:
-- Flask - [
-The Pallets Projects](https://palletsprojects.com/p/flask/)
-- plotly - [
-plotly](https://plotly.com/)
-- pandas - [
-pandas](https://pandas.pydata.org/)
+Built with:
+- [Flask](https://palletsprojects.com/p/flask/) - Web framework
+- [Plotly](https://plotly.com/) - Interactive visualizations
+- [Pandas](https://pandas.pydata.org/) - Data processing
 
+## License
+
+MIT License - See LICENSE.md for details

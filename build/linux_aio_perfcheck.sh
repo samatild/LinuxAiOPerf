@@ -626,26 +626,19 @@ setupResourceWatchdog() {
 
     # Start watchdog in background
     runResourceWatchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &
+    local watchdog_pid=$!
     
-    # Wait a moment for the watchdog to write its PID
-    sleep 0.5
+    # Save PID to file
+    echo "$watchdog_pid" > "$WATCHDOG_PID_FILE"
     
-    # Read the actual PID from the file (written by the watchdog itself)
-    if [ -f "$WATCHDOG_PID_FILE" ]; then
-        local watchdog_pid=$(cat "$WATCHDOG_PID_FILE")
-        echo ""
-        echo -e "\e[1;32m[OK]\e[0m Watchdog started in background"
-        echo -e "  PID: \e[1;37m$watchdog_pid\e[0m"
-        echo -e "  Log: \e[1;37m$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log\e[0m"
-        echo ""
-        echo -e "To check status: \e[0;36m./$(basename $0) --watchdog-status\e[0m"
-        echo -e "To stop:         \e[0;36m./$(basename $0) --watchdog-stop\e[0m"
-        echo ""
-    else
-        echo ""
-        echo -e "\e[1;31m[ERROR]\e[0m Failed to start watchdog"
-        echo ""
-    fi
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m Watchdog started in background"
+    echo -e "  PID: \e[1;37m$watchdog_pid\e[0m"
+    echo -e "  Log: \e[1;37m$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log\e[0m"
+    echo ""
+    echo -e "To check status: \e[0;36m./$(basename $0) --watchdog-status\e[0m"
+    echo -e "To stop:         \e[0;36m./$(basename $0) --watchdog-stop\e[0m"
+    echo ""
 }
 
 runResourceWatchdog() {
@@ -657,16 +650,13 @@ runResourceWatchdog() {
     local io_threshold=$6
     local duration=$7
     
-    # Write our actual PID to the file (this is the real subprocess PID)
-    echo "$$" > "$WATCHDOG_PID_FILE"
-    
     # Setup logging
     mkdir -p "$WATCHDOG_LOG_DIR"
-    local LOG_FILE="$WATCHDOG_LOG_DIR/watchdog_$$.log"
-    local TEMP_IOSTAT="/tmp/linuxaio_iostat_$$.tmp"
+    local LOG_FILE="$WATCHDOG_LOG_DIR/watchdog_$BASHPID.log"
+    local TEMP_IOSTAT="/tmp/linuxaio_iostat_$BASHPID.tmp"
     
     # Log startup
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog started (PID: $$)" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog started (PID: $BASHPID)" >> "$LOG_FILE"
     echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Monitoring: CPU=$monitor_cpu MEM=$monitor_mem IO=$monitor_io" >> "$LOG_FILE"
     echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Thresholds: CPU=${cpu_threshold}% MEM=${mem_threshold}% IO=${io_threshold}%" >> "$LOG_FILE"
     echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture duration: ${duration}s" >> "$LOG_FILE"

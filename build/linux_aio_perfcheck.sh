@@ -26,6 +26,8 @@ function print_usage() {
     echo -e "  \e[1;32m--quick\e[0m                        Quick data collection mode"
     echo -e "  \e[1;32m--watchdog-status\e[0m              Check watchdog status"
     echo -e "  \e[1;32m--watchdog-stop\e[0m                Stop running watchdog"
+    echo -e "  \e[1;32m--cron-list\e[0m                    List scheduled cron jobs"
+    echo -e "  \e[1;32m--cron-remove\e[0m                  Remove scheduled cron jobs"
     echo -e "  \e[1;32m--version\e[0m                      Show version information"
     echo ""
     echo -e "\e[1;33mOptions:\e[0m"
@@ -36,9 +38,9 @@ function print_usage() {
     echo ""
     echo -e "\e[1;33mExamples:\e[0m"
     echo -e "  \e[0;36m$0 --quick -t 60 -hres ON\e[0m"
-    echo -e "  \e[0;36m$0 --quick --time 300 --high-resolution-disk-counters=OFF\e[0m"
     echo -e "  \e[0;36m$0 --quick -t 120 --skip-checks\e[0m"
     echo -e "  \e[0;36m$0 --watchdog-status\e[0m"
+    echo -e "  \e[0;36m$0 --cron-list\e[0m"
     echo ""
     echo -e "\e[0;90mNote: Run without arguments to start in interactive mode\e[0m"
     echo ""
@@ -485,62 +487,212 @@ function createReport() {
     echo ""
 }
 
-# Define the defineCron function
+# ============================================================================
+# Cron Job Management
+# ============================================================================
+
+# Add a new cron job
 function defineCron() {
     echo ""
     echo -e "\e[1;37mCronjob Setup\e[0m"
     echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
     echo ""
-    read -rp "Run recurrently? (y/n): " choice
+    echo -e "\e[1;37mCommon Schedules:\e[0m"
+    echo -e "  \e[1;32m1\e[0m  Every hour           \e[0;90m(0 * * * *)\e[0m"
+    echo -e "  \e[1;32m2\e[0m  Every 6 hours        \e[0;90m(0 */6 * * *)\e[0m"
+    echo -e "  \e[1;32m3\e[0m  Daily at 2:00 AM     \e[0;90m(0 2 * * *)\e[0m"
+    echo -e "  \e[1;32m4\e[0m  Daily at specific time"
+    echo -e "  \e[1;32m5\e[0m  Custom schedule"
+    echo ""
+    read -rp "Select schedule (1-5): " schedule_choice
     
-    if [[ "$choice" == [Yy] ]]; then
-        echo ""
-        read -rp "Hour interval (0-23): " hour
-        read -rp "Minutes (0-60): " minutes
-        read -rp "Capture duration (10-900 seconds): " duration
-        
-        if (( duration < 10 || duration > 900 )); then
-            echo -e "\e[1;31m[ERROR]\e[0m Invalid duration. Must be between 10 and 900 seconds."
-            exit 1
-        fi
-        
-        # Add the cron job entry for recurrent run
-        crontab -l > mycron
-        echo "$minutes */$hour * * * $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
-        crontab mycron
-        rm mycron
-        echo ""
-        echo -e "\e[1;32m[OK]\e[0m Cron job added"
-        echo -e "  Schedule: \e[1;37m$minutes */$hour * * *\e[0m"
-        echo -e "  Duration: \e[1;37m${duration}s\e[0m"
-    else
-        echo ""
-        echo "Enter cron schedule \e[0;90m(format: minute hour day month day-of-week)\e[0m"
-        echo "Example: 30 2 * * * \e[0;90m(runs daily at 2:30 AM)\e[0m"
-        read -rp "Schedule: " cron_schedule
-        
-        read -rp "Capture duration (10-900 seconds): " duration
-        if (( duration < 10 || duration > 900 )); then
-            echo -e "\e[1;31m[ERROR]\e[0m Invalid duration. Must be between 10 and 900 seconds."
-            exit 1
-        fi
-        
-        # Add the cron job entry for non-recurrent run
-        crontab -l > mycron
-        echo "$cron_schedule $(pwd)/linux_aio_perfcheck.sh --collect-now --time $duration" >> mycron
-        crontab mycron
-        rm mycron
-        echo ""
-        echo -e "\e[1;32m[OK]\e[0m Cron job added"
-        echo -e "  Schedule: \e[1;37m$cron_schedule\e[0m"
-        echo -e "  Duration: \e[1;37m${duration}s\e[0m"
+    local cron_schedule=""
+    case $schedule_choice in
+        1)
+            cron_schedule="0 * * * *"
+            ;;
+        2)
+            cron_schedule="0 */6 * * *"
+            ;;
+        3)
+            cron_schedule="0 2 * * *"
+            ;;
+        4)
+            echo ""
+            read -rp "Enter hour (0-23): " hour
+            read -rp "Enter minute (0-59): " minute
+            
+            if ! [[ "$hour" =~ ^[0-9]+$ ]] || [ "$hour" -lt 0 ] || [ "$hour" -gt 23 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid hour. Must be 0-23."
+                return 1
+            fi
+            if ! [[ "$minute" =~ ^[0-9]+$ ]] || [ "$minute" -lt 0 ] || [ "$minute" -gt 59 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid minute. Must be 0-59."
+                return 1
+            fi
+            
+            cron_schedule="$minute $hour * * *"
+            ;;
+        5)
+            echo ""
+            echo -e "Enter cron schedule \e[0;90m(format: minute hour day month day-of-week)\e[0m"
+            echo -e "Example: \e[0;36m30 14 * * *\e[0m \e[0;90m(daily at 2:30 PM)\e[0m"
+            echo -e "         \e[0;36m0 */4 * * *\e[0m \e[0;90m(every 4 hours)\e[0m"
+            echo -e "         \e[0;36m0 9 * * 1\e[0m   \e[0;90m(Mondays at 9:00 AM)\e[0m"
+            read -rp "Schedule: " cron_schedule
+            
+            # Basic validation (5 fields)
+            if [ $(echo "$cron_schedule" | wc -w) -ne 5 ]; then
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid cron schedule. Must have 5 fields."
+                return 1
+            fi
+            ;;
+        *)
+            echo -e "\e[1;31m[ERROR]\e[0m Invalid choice"
+            return 1
+            ;;
+    esac
+    
+    # Get duration
+    echo ""
+    read -rp "Capture duration (10-900 seconds): " duration
+    if ! [[ "$duration" =~ ^[0-9]+$ ]] || (( duration < 10 || duration > 900 )); then
+        echo -e "\e[1;31m[ERROR]\e[0m Invalid duration. Must be between 10 and 900 seconds."
+        return 1
     fi
     
-    # Restart the chronyd service
-    echo -e "\e[1;36m→\e[0m Restarting cron service..."
-    systemctl restart cron
-    echo -e "\e[1;32m[OK]\e[0m Cron service restarted"
+    # Ask about validation checks
     echo ""
+    read -rp "Skip validation checks? \e[0;90m(recommended for automated runs)\e[0m (y/n): " skip_choice
+    local skip_flag=""
+    if [[ "$skip_choice" == [Yy] ]]; then
+        skip_flag=" --skip-checks"
+    fi
+    
+    # Build the command
+    local script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    local cron_command="$cron_schedule $script_path --quick -t $duration$skip_flag"
+    
+    # Add to crontab safely
+    local temp_cron=$(mktemp)
+    (crontab -l 2>/dev/null || true) > "$temp_cron"
+    
+    # Check if this exact job already exists
+    if grep -Fq "$script_path --quick -t $duration" "$temp_cron"; then
+        echo ""
+        echo -e "\e[1;33m[WARNING]\e[0m A similar job already exists"
+        read -rp "Add anyway? (y/n): " confirm
+        if [[ "$confirm" != [Yy] ]]; then
+            rm -f "$temp_cron"
+            echo "Cancelled."
+            return 0
+        fi
+    fi
+    
+    # Add comment and job
+    echo "" >> "$temp_cron"
+    echo "# LinuxAiO Performance Collector - Added $(date '+%Y-%m-%d %H:%M:%S')" >> "$temp_cron"
+    echo "$cron_command" >> "$temp_cron"
+    
+    # Install new crontab
+    if crontab "$temp_cron"; then
+        rm -f "$temp_cron"
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m Cron job added successfully"
+        echo ""
+        echo -e "  Schedule: \e[1;37m$cron_schedule\e[0m"
+        echo -e "  Duration: \e[1;37m${duration}s\e[0m"
+        echo -e "  Command:  \e[0;90m$script_path --quick -t $duration$skip_flag\e[0m"
+        echo ""
+        echo -e "To list jobs:   \e[0;36m./$(basename $0) --cron-list\e[0m"
+        echo -e "To remove jobs: \e[0;36m./$(basename $0) --cron-remove\e[0m"
+        echo ""
+    else
+        rm -f "$temp_cron"
+        echo -e "\e[1;31m[ERROR]\e[0m Failed to install cron job"
+        return 1
+    fi
+}
+
+# List cron jobs for this script
+function listCronJobs() {
+    local script_name=$(basename "${BASH_SOURCE[0]}")
+    
+    echo ""
+    echo -e "\e[1;37mScheduled Collection Jobs\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    
+    local jobs=$(crontab -l 2>/dev/null | grep -n "$script_name")
+    
+    if [ -z "$jobs" ]; then
+        echo -e "\e[1;33m[INFO]\e[0m No scheduled jobs found"
+        echo ""
+        return 0
+    fi
+    
+    echo "$jobs" | while IFS=: read -r line_num content; do
+        # Skip comments
+        if [[ "$content" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+        
+        echo -e "  \e[1;37mLine $line_num:\e[0m"
+        echo -e "  $content"
+        echo ""
+    done
+    
+    echo -e "To remove a job: \e[0;36m./$(basename $0) --cron-remove\e[0m"
+    echo ""
+}
+
+# Remove cron jobs for this script
+function removeCronJobs() {
+    local script_name=$(basename "${BASH_SOURCE[0]}")
+    
+    echo ""
+    echo -e "\e[1;37mRemove Scheduled Jobs\e[0m"
+    echo -e "\e[0;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+    echo ""
+    
+    local temp_cron=$(mktemp)
+    crontab -l 2>/dev/null > "$temp_cron"
+    
+    local jobs=$(grep -n "$script_name" "$temp_cron" | grep -v "^[[:space:]]*#")
+    
+    if [ -z "$jobs" ]; then
+        echo -e "\e[1;33m[INFO]\e[0m No scheduled jobs found"
+        echo ""
+        rm -f "$temp_cron"
+        return 0
+    fi
+    
+    echo "Found jobs:"
+    echo ""
+    echo "$jobs" | while IFS=: read -r line_num content; do
+        echo -e "  \e[1;37m[$line_num]\e[0m $content"
+    done
+    echo ""
+    
+    read -rp "Remove all LinuxAiO cron jobs? (y/n): " confirm
+    if [[ "$confirm" == [Yy] ]]; then
+        grep -v "$script_name" "$temp_cron" > "${temp_cron}.new"
+        
+        # Also remove associated comments
+        grep -v "# LinuxAiO Performance Collector" "${temp_cron}.new" > "$temp_cron"
+        
+        if crontab "$temp_cron"; then
+            echo ""
+            echo -e "\e[1;32m[OK]\e[0m Cron jobs removed"
+            echo ""
+        else
+            echo -e "\e[1;31m[ERROR]\e[0m Failed to update crontab"
+        fi
+    else
+        echo "Cancelled."
+    fi
+    
+    rm -f "$temp_cron" "${temp_cron}.new"
 }
 
 # ============================================================================
@@ -1003,6 +1155,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --watchdog-stop)
             stopWatchdog
+            exit $?
+            ;;
+        --cron-list)
+            listCronJobs
+            exit $?
+            ;;
+        --cron-remove)
+            removeCronJobs
             exit $?
             ;;
         --cronjob)

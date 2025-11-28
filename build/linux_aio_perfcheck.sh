@@ -808,10 +808,17 @@ function displayMenu(){
     echo -e "  \e[1;32m4\e[0m  Toggle high resolution disk metrics"
     echo -e "     \e[0;90m50ms samples (live capture only) - Current: \e[1;37m$high_res_disk_metrics\e[0m"
     echo ""
+    echo -e "  \e[1;31m0\e[0m  Exit"
+    echo ""
 
-    read -p "Select option (1-4): " run_mode
+    read -p "Select option (0-4): " run_mode
     
     case $run_mode in
+        0)
+            echo ""
+            echo "Exiting..."
+            exit 0
+        ;;
         1)
             liveData
         ;;

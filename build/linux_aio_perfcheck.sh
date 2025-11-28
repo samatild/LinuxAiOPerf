@@ -168,7 +168,9 @@ function packageValidation(){
             iotop_package_name="iotop"
         ;;
         *)
-            echo "Unsupported distribution: $distro"
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Unsupported distribution: $distro"
+            echo "Supported distributions: Ubuntu, Debian, RHEL, CentOS, Oracle Linux, SLES"
             exit 1
         ;;
     esac
@@ -713,6 +715,81 @@ function toggleHighResDiskMetrics() {
     echo ""
 }
 
+# Non-interactive validation for command-line mode
+function validateNonInteractive() {
+    # Run locale validation
+    localeValidation
+    
+    # Run package validation
+    echo ""
+    echo -e "\e[1;37mChecking dependencies...\e[0m"
+    
+    # Determine package manager
+    distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+    case "$distro" in
+        ubuntu|debian)
+            package_manager="apt-get"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        sles)
+            package_manager="zypper"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        rhel|centos|ol)
+            package_manager="yum"
+            sysstat_package_name="sysstat"
+            iotop_package_name="iotop"
+        ;;
+        *)
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Unsupported distribution: $distro"
+            echo "Supported distributions: Ubuntu, Debian, RHEL, CentOS, Oracle Linux, SLES"
+            echo ""
+            echo "To bypass this check, use: --skip-checks"
+            exit 1
+        ;;
+    esac
+    
+    # Function to check if a package is installed (inline version)
+    check_pkg() {
+        local pkg=$1
+        if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
+            dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
+        else
+            rpm -q "$pkg" >/dev/null 2>&1
+        fi
+    }
+    
+    missing_packages=()
+    
+    if check_pkg "$sysstat_package_name"; then
+        echo -e "  \e[1;32m✓\e[0m sysstat"
+    else
+        echo -e "  \e[1;31m✗\e[0m sysstat"
+        missing_packages+=("$sysstat_package_name")
+    fi
+    
+    if check_pkg "$iotop_package_name"; then
+        echo -e "  \e[1;32m✓\e[0m iotop"
+    else
+        echo -e "  \e[1;31m✗\e[0m iotop"
+        missing_packages+=("$iotop_package_name")
+    fi
+    
+    # If packages are missing, exit with error
+    if [ ${#missing_packages[@]} -gt 0 ]; then
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Missing required packages: ${missing_packages[*]}"
+        echo "Please install them manually or run in interactive mode for installation prompts."
+        exit 1
+    fi
+    
+    echo ""
+    echo -e "\e[1;32m[OK]\e[0m All dependencies installed"
+}
+
 function displayMenu(){
     # Menu for selecting run mode
     echo ""
@@ -866,6 +943,11 @@ if [ -n "$COMMAND" ]; then
                 runmode="Interactive (Collect Now) Data Capture - $DURATION seconds"
             fi
             
+            # Run validation checks unless --skip-checks is enabled
+            if [ "$skip_checks" == "OFF" ]; then
+                validateNonInteractive
+            fi
+            
             # Call dataCapture with validated parameters
             dataCapture "$DURATION" "$HIGH_RES"
             ;;
@@ -884,6 +966,12 @@ if [ -n "$COMMAND" ]; then
         --cronjob)
             # Set runmode for cronjob
             runmode="Cron Job Data Capture - $DURATION seconds"
+            
+            # Run validation checks unless --skip-checks is enabled
+            if [ "$skip_checks" == "OFF" ]; then
+                validateNonInteractive
+            fi
+            
             # Call dataCapture with duration
             dataCapture "$DURATION" "$HIGH_RES"
             ;;

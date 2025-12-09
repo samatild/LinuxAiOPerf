@@ -755,7 +755,8 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_usr = fig_usr.to_html(full_html=False, include_plotlyjs='cdn')
+                div_usr = fig_usr.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10CpuUsr">{div_usr}</div>'
 
             # Create %system graph (ranked by avg %system)
@@ -799,7 +800,8 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_sys = fig_sys.to_html(full_html=False, include_plotlyjs='cdn')
+                div_sys = fig_sys.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10CpuSys">{div_sys}</div>'
 
             # Create %wait graph (ranked by avg %wait)
@@ -843,7 +845,8 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_wait = fig_wait.to_html(full_html=False, include_plotlyjs='cdn')
+                div_wait = fig_wait.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10CpuWait">{div_wait}</div>'
 
             if not rp:
@@ -913,7 +916,8 @@ def generate_report(
                     ),
                     margin=dict(b=150),
                 )
-                div_read = fig_read.to_html(full_html=False, include_plotlyjs='cdn')
+                div_read = fig_read.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10IoRead">{div_read}</div>'
 
             # Create kB_wr/s graph (ranked by avg write)
@@ -957,7 +961,8 @@ def generate_report(
                     ),
                     margin=dict(b=150),
                 )
-                div_write = fig_write.to_html(full_html=False, include_plotlyjs='cdn')
+                div_write = fig_write.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10IoWrite">{div_write}</div>'
 
             # Create iodelay graph (ranked by avg iodelay)
@@ -1022,7 +1027,8 @@ def generate_report(
     rp = ""
 
     try:
-        top_mem_data = extract_top_mem_consumers("pidstat-memory.txt", top_n=10)
+        top_mem_data = extract_top_mem_consumers(
+            "pidstat-memory.txt", top_n=10)
 
         if top_mem_data['timestamps']:
             # Color palette for distinct process lines
@@ -1072,7 +1078,8 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_mem = fig_mem.to_html(full_html=False, include_plotlyjs='cdn')
+                div_mem = fig_mem.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10MemPct">{div_mem}</div>'
 
             # Create RSS graph (ranked by avg RSS)
@@ -1120,7 +1127,8 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_rss = fig_rss.to_html(full_html=False, include_plotlyjs='cdn')
+                div_rss = fig_rss.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10Rss">{div_rss}</div>'
 
             # Create VSZ graph (ranked by avg VSZ)
@@ -1168,16 +1176,17 @@ def generate_report(
                     ),
                     margin=dict(b=150)
                 )
-                div_vsz = fig_vsz.to_html(full_html=False, include_plotlyjs='cdn')
+                div_vsz = fig_vsz.to_html(
+                    full_html=False, include_plotlyjs='cdn')
                 rp += f'<div id="plotlyGraphTop10Vsz">{div_vsz}</div>'
 
             if not rp:
-                rp = '<p>No pidstat memory data available for top consumers.</p>'
+                rp = '<p>No pidstat memory data available.</p>'
         else:
             rp = '<p>No pidstat memory data available for top consumers.</p>'
     except Exception as e:
-        log_message(f"Error generating top memory consumers charts: {e}", "Error")
-        rp = '<p>Error generating top memory consumers charts.</p>'
+        log_message(f"Error generating memory charts: {e}", "Error")
+        rp = '<p>Error generating memory consumer charts.</p>'
 
     content = content.replace(
         "<!-- procperf.top10mem_placeholder -->",

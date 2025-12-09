@@ -13,7 +13,7 @@ from collections import defaultdict
 
 def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
     """
-    Extract top N CPU consuming processes for each metric with time-series data.
+    Extract top N CPU consumers for each metric with time-series data.
 
     Ranking Method:
     ---------------
@@ -86,7 +86,7 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
 
             try:
                 # Parse fields based on pidstat output format:
-                # Timestamp [AM/PM] UID PID %usr %system %guest %wait %CPU CPU Command
+                # Time [AM/PM] UID PID %usr %system %guest %wait %CPU CPU Cmd
                 pid = parts[offset + 1]
                 usr = float(parts[offset + 2])
                 system = float(parts[offset + 3])
@@ -106,9 +106,10 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
                 current_sys = process_data[command]['system'].get(timestamp, 0)
                 current_wait = process_data[command]['wait'].get(timestamp, 0)
 
-                process_data[command]['usr'][timestamp] = max(current_usr, usr)
-                process_data[command]['system'][timestamp] = max(current_sys, system)
-                process_data[command]['wait'][timestamp] = max(current_wait, wait)
+                proc = process_data[command]
+                proc['usr'][timestamp] = max(current_usr, usr)
+                proc['system'][timestamp] = max(current_sys, system)
+                proc['wait'][timestamp] = max(current_wait, wait)
 
             except (ValueError, IndexError):
                 # Skip malformed lines
@@ -139,11 +140,12 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
         result = {}
         for command in top_commands:
             data = process_data[command]
+            values = [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
             result[command] = {
                 'command': command,
                 'pids': list(data['pids']),
                 'avg_metric': round(process_avg[command], 2),
-                'values': [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
+                'values': values
             }
         return result
 

@@ -27,9 +27,11 @@
             <div class="tab active" id="index-tab" onclick="openSubTabs('substab-overview')">
                 System Configuration</div>
             <div class="tab" onclick="openSubTabs('substab-perfanalysis')">
-                Performance Analysis</div>
+                System Performance</div>
+            <div class="tab" onclick="openSubTabs('substab-processperf')">
+                Process Activity</div>
             <div class="tab" onclick="openSubTabs('substab-processinfo')">
-                Process Information</div>
+                Process Details</div>
             <div class="tab" onclick="openSubTabs('substab-about')">About
             </div>
         </div>
@@ -68,6 +70,14 @@
         openTab(event, 'tab4')">High Resolution Disk Metrics</div>
                 <div class="subtab" onclick="event.stopPropagation();
         openTab(event, 'tab9')"> Network Statistics</div>
+            </div>
+            <div class="subtabs" id="substab-processperf">
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-top10cpu')">Top 10 CPU Consumers</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-top10io')">Top 10 IO Consumers</div>
+                <div class="subtab" onclick="event.stopPropagation();
+        openTab(event, 'subcontent-top10mem')">Top 10 Memory Consumers</div>
             </div>
             <div class="subtabs" id="substab-processinfo">
                 <div class="subtab" onclick="event.stopPropagation();
@@ -267,6 +277,36 @@ SOFTWARE.
             with Disk and related graphs under Performance Analysis.
         </p>
         <!-- procinfo.iotop_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-top10cpu">
+        <!-- Process Performance - Top 10 CPU Consumers -->
+        <p>
+            Top 10 CPU consuming processes plotted over time. Each line represents a process's
+            CPU usage throughout the collection period. The graphs show %usr (user time),
+            %system (kernel time), and %wait (I/O wait time).
+        </p>
+        <!-- procperf.top10cpu_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-top10io">
+        <!-- Process Performance - Top 10 IO Consumers -->
+        <p>
+            Top 10 I/O consuming processes plotted over time. Each line represents a process's
+            I/O activity throughout the collection period. The graphs show kB_rd/s (read throughput),
+            kB_wr/s (write throughput), and iodelay (I/O delay in clock ticks).
+        </p>
+        <!-- procperf.top10io_placeholder -->
+    </div>
+
+    <div class="tab-content" id="subcontent-top10mem">
+        <!-- Process Performance - Top 10 Memory Consumers -->
+        <p>
+            Top 10 memory consuming processes plotted over time. Each line represents a process's
+            memory usage throughout the collection period. The graphs show %MEM (memory percentage),
+            RSS (Resident Set Size in MB), and VSZ (Virtual Memory Size in MB).
+        </p>
+        <!-- procperf.top10mem_placeholder -->
     </div>
 
 

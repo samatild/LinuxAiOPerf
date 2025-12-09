@@ -13,7 +13,7 @@ from collections import defaultdict
 
 def extract_top_io_consumers(pidstatio_input_file, top_n=10):
     """
-    Extract top N I/O consuming processes for each metric with time-series data.
+    Extract top N I/O consumers for each metric with time-series data.
 
     Ranking Method:
     ---------------
@@ -80,8 +80,7 @@ def extract_top_io_consumers(pidstatio_input_file, top_n=10):
 
             try:
                 # Parse fields based on pidstat -d output format:
-                # Timestamp [AM/PM] UID PID kB_rd/s kB_wr/s kB_ccwr/s iodelay Command
-                # With AM/PM: indices are 0=time, 1=AM/PM, 2=UID, 3=PID, 4=rd, 5=wr, 6=ccwr, 7=iodelay, 8+=Command
+                # Time [AM/PM] UID PID kB_rd/s kB_wr/s kB_ccwr/s iodelay Cmd
                 pid = parts[offset + 1]  # PID
                 read_val = float(parts[offset + 2])  # kB_rd/s
                 write_val = float(parts[offset + 3])  # kB_wr/s
@@ -97,14 +96,14 @@ def extract_top_io_consumers(pidstatio_input_file, top_n=10):
 
                 # For each timestamp, keep the MAX value if multiple PIDs
                 # have the same command (aggregate)
-                current_read = process_data[command]['read'].get(timestamp, 0)
-                current_write = process_data[command]['write'].get(timestamp, 0)
-                current_iodelay = process_data[command]['iodelay'].get(timestamp, 0)
+                proc = process_data[command]
+                current_read = proc['read'].get(timestamp, 0)
+                current_write = proc['write'].get(timestamp, 0)
+                current_iodelay = proc['iodelay'].get(timestamp, 0)
 
-                process_data[command]['read'][timestamp] = max(current_read, read_val)
-                process_data[command]['write'][timestamp] = max(current_write, write_val)
-                process_data[command]['iodelay'][timestamp] = max(
-                    current_iodelay, iodelay_val)
+                proc['read'][timestamp] = max(current_read, read_val)
+                proc['write'][timestamp] = max(current_write, write_val)
+                proc['iodelay'][timestamp] = max(current_iodelay, iodelay_val)
 
             except (ValueError, IndexError):
                 # Skip malformed lines
@@ -135,11 +134,12 @@ def extract_top_io_consumers(pidstatio_input_file, top_n=10):
         result = {}
         for command in top_commands:
             data = process_data[command]
+            values = [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
             result[command] = {
                 'command': command,
                 'pids': list(data['pids']),
                 'avg_metric': round(process_avg[command], 2),
-                'values': [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
+                'values': values
             }
         return result
 

@@ -13,7 +13,7 @@ from collections import defaultdict
 
 def extract_top_mem_consumers(pidstatmem_input_file, top_n=10):
     """
-    Extract top N memory consuming processes for each metric with time-series data.
+    Extract top N memory consumers for each metric with time-series data.
 
     Ranking Method:
     ---------------
@@ -80,9 +80,8 @@ def extract_top_mem_consumers(pidstatmem_input_file, top_n=10):
 
             try:
                 # Parse fields based on pidstat -r output format:
-                # Timestamp [AM/PM] UID PID minflt/s majflt/s VSZ RSS %MEM Command
-                # With AM/PM: indices after offset are:
-                # 0=UID, 1=PID, 2=minflt/s, 3=majflt/s, 4=VSZ, 5=RSS, 6=%MEM, 7+=Command
+                # Time [AM/PM] UID PID minflt/s majflt/s VSZ RSS %MEM Cmd
+                # Indices after offset: 0=UID 1=PID 2=minflt 3=majflt etc
                 pid = parts[offset + 1]  # PID
                 # minflt/s = parts[offset + 2]  # not used
                 # majflt/s = parts[offset + 3]  # not used
@@ -99,13 +98,14 @@ def extract_top_mem_consumers(pidstatmem_input_file, top_n=10):
 
                 # For each timestamp, keep the MAX value if multiple PIDs
                 # have the same command (aggregate)
-                current_mem = process_data[command]['mem_pct'].get(timestamp, 0)
-                current_rss = process_data[command]['rss'].get(timestamp, 0)
-                current_vsz = process_data[command]['vsz'].get(timestamp, 0)
+                proc = process_data[command]
+                current_mem = proc['mem_pct'].get(timestamp, 0)
+                current_rss = proc['rss'].get(timestamp, 0)
+                current_vsz = proc['vsz'].get(timestamp, 0)
 
-                process_data[command]['mem_pct'][timestamp] = max(current_mem, mem_pct)
-                process_data[command]['rss'][timestamp] = max(current_rss, rss)
-                process_data[command]['vsz'][timestamp] = max(current_vsz, vsz)
+                proc['mem_pct'][timestamp] = max(current_mem, mem_pct)
+                proc['rss'][timestamp] = max(current_rss, rss)
+                proc['vsz'][timestamp] = max(current_vsz, vsz)
 
             except (ValueError, IndexError):
                 # Skip malformed lines
@@ -136,11 +136,12 @@ def extract_top_mem_consumers(pidstatmem_input_file, top_n=10):
         result = {}
         for command in top_commands:
             data = process_data[command]
+            values = [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
             result[command] = {
                 'command': command,
                 'pids': list(data['pids']),
                 'avg_metric': round(process_avg[command], 2),
-                'values': [data[metric_name].get(ts, 0) for ts in sorted_timestamps]
+                'values': values
             }
         return result
 
@@ -150,4 +151,3 @@ def extract_top_mem_consumers(pidstatmem_input_file, top_n=10):
         'top_rss': calculate_top_n_for_metric('rss'),
         'top_vsz': calculate_top_n_for_metric('vsz')
     }
-

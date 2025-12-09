@@ -37,6 +37,11 @@ border-bottom: 1px solid #555;
 border-top-left-radius: 8px;
 border-top-right-radius: 8px;
 margin-left: 10px;
+transition: background-color 0.2s ease;
+}
+
+.tab:hover {
+background-color: #454545;
 }
 
 .subtabs {
@@ -53,6 +58,11 @@ margin-left: 10px;
     margin-left: 10px;
     font-size: 0.9em; /* Smaller font for subtabs */
     margin-top: 5px; /* Spacing between primary tab and subtabs */
+    transition: background-color 0.2s ease;
+}
+
+.subtab:hover {
+    background-color: #5a5a5a;
 }
 
 .subtab.active {
@@ -256,6 +266,10 @@ margin-bottom: 10px;
 
 .pid-table tbody tr:nth-child(even) {
     background-color: #1e1e1e;
+}
+
+.pid-table tbody tr:hover {
+    background-color: #333;
 }
 
 .numeric {

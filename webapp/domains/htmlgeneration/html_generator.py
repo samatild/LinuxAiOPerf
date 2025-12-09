@@ -6,6 +6,10 @@ from ..procinfo.pidstat.pidstatcpu import (
     pidstat_extract_header_line,
     generate_pidstat
 )
+from ..procperf.cpu.top_consumers import extract_top_cpu_consumers
+from ..procperf.io.top_consumers import extract_top_io_consumers
+from ..procperf.memory.top_consumers import extract_top_mem_consumers
+import plotly.graph_objects as go
 
 from ..procinfo.pidstat.pidstatio import (
     pidstatio_extract_header_line,
@@ -694,6 +698,489 @@ def generate_report(
 
     content = content.replace(
         "<!-- procinfo.iotop_placeholder -->",
+        rp)
+
+    # Process Performance - Top 10 CPU Consumers
+    log_message("Process Performance 1/3 - Top 10 CPU Consumers")
+    rp = ""
+
+    try:
+        top_cpu_data = extract_top_cpu_consumers("pidstat.txt", top_n=10)
+
+        if top_cpu_data['timestamps']:
+            # Color palette for distinct process lines
+            colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            ]
+
+            # Create %usr graph (ranked by avg %usr)
+            if top_cpu_data['top_usr']:
+                fig_usr = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_cpu_data['top_usr'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val}%)"
+                    fig_usr.add_trace(
+                        go.Scatter(
+                            x=top_cpu_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg %usr: {avg_val}%<br>"
+                                "Time: %{x}<br>"
+                                "%usr: %{y:.2f}%<extra></extra>"
+                            )
+                        )
+                    )
+                fig_usr.update_layout(
+                    title='Top 10 %usr Consumers (User CPU Time)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='%usr',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_usr = fig_usr.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10CpuUsr">{div_usr}</div>'
+
+            # Create %system graph (ranked by avg %system)
+            if top_cpu_data['top_system']:
+                fig_sys = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_cpu_data['top_system'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val}%)"
+                    fig_sys.add_trace(
+                        go.Scatter(
+                            x=top_cpu_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg %system: {avg_val}%<br>"
+                                "Time: %{x}<br>"
+                                "%system: %{y:.2f}%<extra></extra>"
+                            )
+                        )
+                    )
+                fig_sys.update_layout(
+                    title='Top 10 %system Consumers (Kernel CPU Time)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='%system',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_sys = fig_sys.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10CpuSys">{div_sys}</div>'
+
+            # Create %wait graph (ranked by avg %wait)
+            if top_cpu_data['top_wait']:
+                fig_wait = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_cpu_data['top_wait'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val}%)"
+                    fig_wait.add_trace(
+                        go.Scatter(
+                            x=top_cpu_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg %wait: {avg_val}%<br>"
+                                "Time: %{x}<br>"
+                                "%wait: %{y:.2f}%<extra></extra>"
+                            )
+                        )
+                    )
+                fig_wait.update_layout(
+                    title='Top 10 %wait Consumers (I/O Wait Time)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='%wait',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_wait = fig_wait.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10CpuWait">{div_wait}</div>'
+
+            if not rp:
+                rp = '<p>No pidstat CPU data available for top consumers.</p>'
+        else:
+            rp = '<p>No pidstat CPU data available for top consumers.</p>'
+    except Exception as e:
+        log_message(f"Error generating top CPU consumers charts: {e}", "Error")
+        rp = '<p>Error generating top CPU consumers charts.</p>'
+
+    content = content.replace(
+        "<!-- procperf.top10cpu_placeholder -->",
+        rp)
+
+    # Process Performance - Top 10 IO Consumers
+    log_message("Process Performance 2/3 - Top 10 IO Consumers")
+    rp = ""
+
+    try:
+        top_io_data = extract_top_io_consumers("pidstat-io.txt", top_n=10)
+
+        if top_io_data['timestamps']:
+            # Color palette for distinct process lines
+            colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            ]
+
+            # Create kB_rd/s graph (ranked by avg read)
+            if top_io_data['top_read']:
+                fig_read = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_io_data['top_read'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val})"
+                    fig_read.add_trace(
+                        go.Scatter(
+                            x=top_io_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg kB_rd/s: {avg_val}<br>"
+                                "Time: %{x}<br>"
+                                "kB_rd/s: %{y:.2f}<extra></extra>"
+                            )
+                        )
+                    )
+                fig_read.update_layout(
+                    title='Top 10 Disk Read Consumers (kB_rd/s)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='kB_rd/s',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150),
+                )
+                div_read = fig_read.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10IoRead">{div_read}</div>'
+
+            # Create kB_wr/s graph (ranked by avg write)
+            if top_io_data['top_write']:
+                fig_write = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_io_data['top_write'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val})"
+                    fig_write.add_trace(
+                        go.Scatter(
+                            x=top_io_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg kB_wr/s: {avg_val}<br>"
+                                "Time: %{x}<br>"
+                                "kB_wr/s: %{y:.2f}<extra></extra>"
+                            )
+                        )
+                    )
+                fig_write.update_layout(
+                    title='Top 10 Disk Write Consumers (kB_wr/s)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='kB_wr/s',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150),
+                )
+                div_write = fig_write.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10IoWrite">{div_write}</div>'
+
+            # Create iodelay graph (ranked by avg iodelay)
+            if top_io_data['top_iodelay']:
+                fig_iodelay = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_io_data['top_iodelay'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val})"
+                    fig_iodelay.add_trace(
+                        go.Scatter(
+                            x=top_io_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg iodelay: {avg_val}<br>"
+                                "Time: %{x}<br>"
+                                "iodelay: %{y:.2f}<extra></extra>"
+                            )
+                        )
+                    )
+                fig_iodelay.update_layout(
+                    title='Top 10 I/O Delay Consumers (iodelay)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='iodelay (clock ticks)',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150),
+                )
+                div_iodelay = fig_iodelay.to_html(
+                    full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10IoDelay">{div_iodelay}</div>'
+
+            if not rp:
+                rp = '<p>No pidstat IO data available for top consumers.</p>'
+        else:
+            rp = '<p>No pidstat IO data available for top consumers.</p>'
+    except Exception as e:
+        log_message(f"Error generating top IO consumers charts: {e}", "Error")
+        rp = '<p>Error generating top IO consumers charts.</p>'
+
+    content = content.replace(
+        "<!-- procperf.top10io_placeholder -->",
+        rp)
+
+    # Process Performance - Top 10 Memory Consumers
+    log_message("Process Performance 3/3 - Top 10 Memory Consumers")
+    rp = ""
+
+    try:
+        top_mem_data = extract_top_mem_consumers("pidstat-memory.txt", top_n=10)
+
+        if top_mem_data['timestamps']:
+            # Color palette for distinct process lines
+            colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            ]
+
+            # Create %MEM graph (ranked by avg %MEM)
+            if top_mem_data['top_mem_pct']:
+                fig_mem = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_mem_data['top_mem_pct'].items()):
+                    avg_val = proc_data['avg_metric']
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_val}%)"
+                    fig_mem.add_trace(
+                        go.Scatter(
+                            x=top_mem_data['timestamps'],
+                            y=proc_data['values'],
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg %MEM: {avg_val}%<br>"
+                                "Time: %{x}<br>"
+                                "%MEM: %{y:.2f}%<extra></extra>"
+                            )
+                        )
+                    )
+                fig_mem.update_layout(
+                    title='Top 10 Memory Consumers (%MEM)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='%MEM',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_mem = fig_mem.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10MemPct">{div_mem}</div>'
+
+            # Create RSS graph (ranked by avg RSS)
+            if top_mem_data['top_rss']:
+                fig_rss = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_mem_data['top_rss'].items()):
+                    avg_val = proc_data['avg_metric']
+                    # Convert KB to MB for display
+                    avg_mb = round(avg_val / 1024, 2)
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_mb} MB)"
+                    # Convert values to MB for plotting
+                    values_mb = [v / 1024 for v in proc_data['values']]
+                    fig_rss.add_trace(
+                        go.Scatter(
+                            x=top_mem_data['timestamps'],
+                            y=values_mb,
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg RSS: {avg_mb} MB<br>"
+                                "Time: %{x}<br>"
+                                "RSS: %{y:.2f} MB<extra></extra>"
+                            )
+                        )
+                    )
+                fig_rss.update_layout(
+                    title='Top 10 RSS Consumers (Resident Set Size)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='RSS (MB)',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_rss = fig_rss.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10Rss">{div_rss}</div>'
+
+            # Create VSZ graph (ranked by avg VSZ)
+            if top_mem_data['top_vsz']:
+                fig_vsz = go.Figure()
+                for idx, (command, proc_data) in enumerate(
+                        top_mem_data['top_vsz'].items()):
+                    avg_val = proc_data['avg_metric']
+                    # Convert KB to MB for display
+                    avg_mb = round(avg_val / 1024, 2)
+                    pids_str = ', '.join(proc_data['pids'][:5])
+                    if len(proc_data['pids']) > 5:
+                        pids_str += '...'
+                    label = f"{command[:35]} (avg:{avg_mb} MB)"
+                    # Convert values to MB for plotting
+                    values_mb = [v / 1024 for v in proc_data['values']]
+                    fig_vsz.add_trace(
+                        go.Scatter(
+                            x=top_mem_data['timestamps'],
+                            y=values_mb,
+                            mode='lines',
+                            name=label,
+                            line=dict(color=colors[idx % len(colors)]),
+                            hovertemplate=(
+                                f"<b>{command}</b><br>"
+                                f"PIDs: {pids_str}<br>"
+                                f"Avg VSZ: {avg_mb} MB<br>"
+                                "Time: %{x}<br>"
+                                "VSZ: %{y:.2f} MB<extra></extra>"
+                            )
+                        )
+                    )
+                fig_vsz.update_layout(
+                    title='Top 10 VSZ Consumers (Virtual Memory Size)',
+                    xaxis_title='Timestamp',
+                    yaxis_title='VSZ (MB)',
+                    height=500,
+                    template="seaborn",
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=-0.4,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=150)
+                )
+                div_vsz = fig_vsz.to_html(full_html=False, include_plotlyjs='cdn')
+                rp += f'<div id="plotlyGraphTop10Vsz">{div_vsz}</div>'
+
+            if not rp:
+                rp = '<p>No pidstat memory data available for top consumers.</p>'
+        else:
+            rp = '<p>No pidstat memory data available for top consumers.</p>'
+    except Exception as e:
+        log_message(f"Error generating top memory consumers charts: {e}", "Error")
+        rp = '<p>Error generating top memory consumers charts.</p>'
+
+    content = content.replace(
+        "<!-- procperf.top10mem_placeholder -->",
         rp)
 
     rp = ""

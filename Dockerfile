@@ -1,6 +1,6 @@
 # Universal Dockerfile for Linux AIO Performance Checker
 # Simplified approach based on original working Dockerfile
-FROM python:3.11-slim-bookworm
+FROM python:3.14.2-slim-bookworm
 
 # Set the working directory in the container
 WORKDIR /app
@@ -15,12 +15,12 @@ COPY webapp/ /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn gevent
+    pip install --no-cache-dir -r requirements.txt
 
-# Create upload directory with proper permissions
+# Create upload directory with proper permissions for user 1000:1000
 RUN mkdir -p /linuxaio/digest && \
-    chmod 755 /linuxaio/digest
+    chmod 755 /linuxaio/digest && \
+    chown 1000:1000 /linuxaio/digest
 
 # Make port 80 available to the world outside this container
 EXPOSE 80
@@ -35,6 +35,6 @@ ENV FLASK_ENV=production \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:80/ || exit 1
 
-# Command to run the application using gunicorn
+# Command to run the application using gunicorn with sync workers
 # Azure will automatically set PORT environment variable
-CMD ["sh", "-c", "gunicorn --bind=0.0.0.0:${PORT:-80} --workers=${WORKERS:-4} --worker-class=gevent --timeout=${TIMEOUT:-300} --access-logfile=- --error-logfile=- --log-level=info app:app"]
+CMD ["sh", "-c", "gunicorn --bind=0.0.0.0:${PORT:-80} --workers=${WORKERS:-4} --worker-class=sync --timeout=${TIMEOUT:-300} --access-logfile=- --error-logfile=- --log-level=info app:app"]

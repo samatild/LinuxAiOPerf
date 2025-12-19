@@ -17,11 +17,13 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-# Ensure data directory exists with proper permissions
-echo -e "${YELLOW}Ensuring data directory exists...${NC}"
-mkdir -p data/uploads
-chmod 755 data/uploads
-echo -e "${GREEN}Data directory ready.${NC}"
+# Ensure uploads directory exists with proper permissions
+echo -e "${YELLOW}Ensuring uploads directory exists...${NC}"
+mkdir -p uploads
+chmod 755 uploads
+# Ensure ownership is correct for the container user (1000:1000)
+chown -R 1000:1000 uploads 2>/dev/null || echo -e "${YELLOW}Note: Could not set ownership (may need sudo)${NC}"
+echo -e "${GREEN}Uploads directory ready.${NC}"
 echo
 
 # Read version from VERSION file

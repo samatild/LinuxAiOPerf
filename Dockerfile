@@ -18,9 +18,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn gevent
 
-# Create upload directory with proper permissions
+# Create upload directory with proper permissions for user 1000:1000
 RUN mkdir -p /linuxaio/digest && \
-    chmod 755 /linuxaio/digest
+    chmod 755 /linuxaio/digest && \
+    chown 1000:1000 /linuxaio/digest
 
 # Make port 80 available to the world outside this container
 EXPOSE 80

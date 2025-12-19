@@ -13,7 +13,7 @@ services:
       - UPLOAD_FOLDER=/linuxaio/digest
     volumes:
       # Mount upload directory for persistence (bind mount for better permission control)
-      - ./data/uploads:/linuxaio/digest
+      - ./uploads:/linuxaio/digest
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/"]

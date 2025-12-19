@@ -1,6 +1,6 @@
 # Universal Dockerfile for Linux AIO Performance Checker
 # Simplified approach based on original working Dockerfile
-FROM python:3.11-slim-bookworm
+FROM python:3.14.2-slim-bookworm
 
 # Set the working directory in the container
 WORKDIR /app
@@ -18,9 +18,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn gevent
 
-# Create upload directory with proper permissions
+# Create upload directory with proper permissions for user 1000:1000
 RUN mkdir -p /linuxaio/digest && \
-    chmod 755 /linuxaio/digest
+    chmod 755 /linuxaio/digest && \
+    chown 1000:1000 /linuxaio/digest
 
 # Make port 80 available to the world outside this container
 EXPOSE 80

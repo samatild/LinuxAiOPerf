@@ -1,6 +1,6 @@
 # Universal Dockerfile for Linux AIO Performance Checker
 # Simplified approach based on original working Dockerfile
-FROM python:3.14.2-slim-bookworm
+FROM python:3.15-rc-slim-trixie
 
 # Set the working directory in the container
 WORKDIR /app

@@ -10,14 +10,11 @@
 
 A comprehensive performance data collector for Linux systems. Captures CPU, memory, storage, and system metrics for analysis via web interface.
 
-## Latest Release
+## How it works
 
-**Version 2.1.2** - November 2025
-- Refactored resource watchdog with PID tracking and management
-- Improved cron job setup with templates and management commands
-- Added Debian distribution support
-- Modern Python-style CLI output
-- Skip validation checks flag for automation
+<p float="left">
+  <img src="assets/demo_linuxaio.gif" width="800" height="auto" />
+</p>
 
 ## Web Application
 

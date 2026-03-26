@@ -162,3 +162,7 @@ cython_debug/
 
 # Local ignore
 .ignore/
+
+# Local Testing & Examples
+uploads/
+examples/*/

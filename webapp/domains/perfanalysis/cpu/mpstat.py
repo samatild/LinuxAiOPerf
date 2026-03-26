@@ -11,6 +11,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.base import BaseDataProcessor, DataProcessorError
+from core.datetime_utils import (parse_collection_date, enrich_timestamps,
+                                 normalize_ampm_timestamps)
 
 
 class CPUProcessor(BaseDataProcessor):
@@ -44,9 +46,7 @@ class CPUProcessor(BaseDataProcessor):
                 for line in f:
                     if ("Linux" not in line and "Average" not in line and
                             line.strip()):
-                        # Remove AM/PM indicators
-                        cleaned_line = (line.replace("AM", "")
-                                        .replace("PM", "").strip())
+                        cleaned_line = normalize_ampm_timestamps(line).strip()
                         filtered_lines.append(cleaned_line)
             return filtered_lines
         except IOError as e:
@@ -73,9 +73,16 @@ class CPUProcessor(BaseDataProcessor):
                 ts_col = df.columns[0]
                 ts_series = df[ts_col].astype(str)
 
-                fmt = None
                 if ts_series.str.match(r'^\d{2}:\d{2}:\d{2}$').all():
-                    fmt = '%H:%M:%S'
+                    # Time-only format: enrich with the actual collection date
+                    # from info.txt to avoid Pandas defaulting to today's date.
+                    collection_date = parse_collection_date(self.input_file)
+                    if collection_date is not None:
+                        ts_series = enrich_timestamps(
+                            ts_series, collection_date)
+                        fmt = '%Y-%m-%d %H:%M:%S'
+                    else:
+                        fmt = '%H:%M:%S'
                 elif ts_series.str.match(
                         r'^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$'
                 ).all():
@@ -88,6 +95,8 @@ class CPUProcessor(BaseDataProcessor):
                         r'^\d{2}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2}$'
                 ).all():
                     fmt = '%m/%d/%y %H:%M:%S'
+                else:
+                    fmt = None
 
                 if fmt is not None:
                     parsed_ts = pd.to_datetime(

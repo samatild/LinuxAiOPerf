@@ -10,6 +10,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.base import BaseDataProcessor, DataProcessorError
+from core.datetime_utils import (parse_collection_date, enrich_timestamps,
+                                 normalize_ampm_timestamps)
 
 
 class NetworkProcessor(BaseDataProcessor):
@@ -27,8 +29,11 @@ class NetworkProcessor(BaseDataProcessor):
             with open(self.input_file, 'r') as f:
                 for line in f:
                     if "IFACE" in line:
-                        # Replace the first column with "Timestamp"
-                        columns = line.split()
+                        # Drop AM/PM tokens before renaming first column so
+                        # RHEL 12-hour timestamps don't inject a spurious
+                        # column (e.g. "12:31:29 PM IFACE …" → "Timestamp IFACE …")
+                        columns = [c for c in line.split()
+                                   if c.upper() not in ('AM', 'PM')]
                         columns[0] = "Timestamp"
                         return " ".join(columns).strip()
             raise DataProcessorError(
@@ -46,9 +51,9 @@ class NetworkProcessor(BaseDataProcessor):
                     if ("IFACE" not in line and
                             "Linux" not in line and
                             line.strip()):
-                        # Remove AM/PM indicators
-                        cleaned_line = (line.replace("AM", "")
-                                        .replace("PM", "").strip())
+                        # Convert HH:MM:SS AM/PM to 24-hour so the timestamp
+                        # column count stays consistent with the header
+                        cleaned_line = normalize_ampm_timestamps(line).strip()
                         filtered_lines.append(cleaned_line)
             return filtered_lines
         except IOError as e:
@@ -106,8 +111,16 @@ class NetworkProcessor(BaseDataProcessor):
             interface_col = df.columns[1]  # Interface column
             metric_cols = df.columns[2:]  # Metric columns
 
-            # Convert timestamp column to datetime
-            df[time_col] = pd.to_datetime(df[time_col], format="%H:%M:%S")
+            # Convert timestamp column to datetime, enriching with the actual
+            # collection date from info.txt to avoid using today's date.
+            ts_series = df[time_col].astype(str)
+            collection_date = parse_collection_date(self.input_file)
+            if collection_date is not None:
+                ts_series = enrich_timestamps(ts_series, collection_date)
+                ts_fmt = '%Y-%m-%d %H:%M:%S'
+            else:
+                ts_fmt = '%H:%M:%S'
+            df[time_col] = pd.to_datetime(ts_series, format=ts_fmt)
 
             figures = []
 
@@ -132,8 +145,6 @@ class NetworkProcessor(BaseDataProcessor):
                     title=f'Network {metric}',
                     y_title='Value'
                 )
-                # Override timestamp format for network data
-                layout['xaxis']['tickformat'] = "%H:%M:%S"
                 fig.update_layout(**layout)
 
                 figures.append(fig)

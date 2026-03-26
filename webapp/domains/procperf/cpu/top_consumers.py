@@ -8,7 +8,10 @@ Each metric (%usr, %system, %wait) has its own independent top 10 ranking.
 Processes are grouped by Command name (not PID).
 """
 
+import datetime
 from collections import defaultdict
+
+from core.datetime_utils import parse_collection_date
 
 
 def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
@@ -54,6 +57,9 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
     all_timestamps = set()
     header_cols = None
 
+    # Derive collection date from info.txt so time-only stamps get full datetime
+    collection_date = parse_collection_date(pidstat_input_file)
+
     with open(pidstat_input_file, 'r') as f:
         for line in f:
             line = line.strip()
@@ -78,11 +84,27 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
                 continue
 
             # Handle AM/PM format (e.g., "12:51:43 PM")
-            timestamp = first_col
+            time_str = first_col
             offset = 1
             if len(parts) > 1 and parts[1] in ('AM', 'PM'):
-                timestamp = f"{first_col} {parts[1]}"
+                time_str = f"{first_col} {parts[1]}"
                 offset = 2
+
+            # Build a full datetime string so Plotly renders a proper time axis
+            if collection_date is not None:
+                try:
+                    if offset == 2:
+                        t = datetime.datetime.strptime(
+                            time_str, "%I:%M:%S %p")
+                    else:
+                        t = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                    timestamp = datetime.datetime.combine(
+                        collection_date, t.time()
+                    ).strftime("%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    timestamp = time_str
+            else:
+                timestamp = time_str
 
             try:
                 # Parse fields based on pidstat output format:

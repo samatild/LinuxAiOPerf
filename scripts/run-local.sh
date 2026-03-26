@@ -11,8 +11,8 @@ HOST_PORT=8000
 # Colours
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
-# Go to repo root regardless of where the script is called from
-cd "$(dirname "$0")"
+# Go to project root (script lives in scripts/ subdirectory)
+cd "$(dirname "$0")/.."
 
 echo -e "${YELLOW}==> Checking for existing container '${CONTAINER_NAME}'...${NC}"
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then

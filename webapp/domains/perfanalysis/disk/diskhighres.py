@@ -209,7 +209,7 @@ class DiskHighResProcessor(BaseDataProcessor):
                 updatemenus=updatemenus,
                 xaxis=dict(
                     type="date",
-                    tickformat="%H:%M:%S.%3f"
+                    tickformat="%m/%d %H:%M:%S"
                 )
             )
             fig_iops.update_traces(line={'shape': 'linear'}, mode='lines')
@@ -245,7 +245,7 @@ class DiskHighResProcessor(BaseDataProcessor):
                 updatemenus=updatemenus,
                 xaxis=dict(
                     type="date",
-                    tickformat="%H:%M:%S.%3f"
+                    tickformat="%m/%d %H:%M:%S"
                 )
             )
             fig_throughput.update_traces(line={'shape': 'linear'},
@@ -325,7 +325,7 @@ class DiskHighResProcessor(BaseDataProcessor):
                 )],
                 xaxis=dict(
                     type="date",
-                    tickformat="%H:%M:%S.%3f"
+                    tickformat="%m/%d %H:%M:%S"
                 )
             )
             fig_latency.update_traces(line={'shape': 'linear'}, mode='lines')

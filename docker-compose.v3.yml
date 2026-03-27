@@ -1,23 +1,11 @@
 services:
-  api:
+  app:
     build:
       context: .
       dockerfile: Dockerfile.v3
-    container_name: linuxaio-v3-api
+    container_name: linuxaio-v3
     ports:
-      - "8787:8787"
+      - "8000:8000"
     environment:
-      - PORT=8787
-    restart: unless-stopped
-
-  frontend:
-    image: nginx:alpine
-    container_name: linuxaio-v3-frontend
-    ports:
-      - "8000:80"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./nginx.v3.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - api
+      - PORT=8000
     restart: unless-stopped

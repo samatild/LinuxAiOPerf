@@ -27,7 +27,7 @@ export default function SysConfigTab({ data }: Props) {
         case 'information': return !!(data.information?.runtime_info || data.information?.os_release);
         case 'hardware':    return !!(data.hardware?.lshw || data.hardware?.dmidecode);
         case 'storage':     return !!(data.storage?.df || data.storage?.lsblk || data.storage?.lsscsi);
-        case 'lvm':         return !!data.lvm?.svg;
+        case 'lvm':         return !!(data.lvm?.svg || data.lvm?.lvs_raw);
         case 'cpu_info':    return !!data.cpu_info;
         case 'memory_info': return !!data.memory_info;
         case 'kernel_params': return !!data.kernel_params;
@@ -67,11 +67,20 @@ export default function SysConfigTab({ data }: Props) {
             <TextBlock label="ls -l /dev/mapper" content={data.storage?.ls_dev_mapper} />
           </>
         )}
-        {activeSub === 'lvm' && data.lvm?.svg && (
-          <div
-            className="flex justify-center"
-            dangerouslySetInnerHTML={{ __html: data.lvm.svg }}
-          />
+        {activeSub === 'lvm' && (
+          <div>
+            {data.lvm?.svg && (
+              <div className="flex justify-center mb-6 p-4 bg-white rounded-lg overflow-auto">
+                <div dangerouslySetInnerHTML={{ __html: data.lvm.svg }} />
+              </div>
+            )}
+            <TextBlock label="pvs" content={data.lvm?.pvs_raw} />
+            <TextBlock label="vgs" content={data.lvm?.vgs_raw} />
+            <TextBlock label="lvs" content={data.lvm?.lvs_raw} />
+            <TextBlock label="pvdisplay" content={data.lvm?.pvdisplay_raw} />
+            <TextBlock label="vgdisplay" content={data.lvm?.vgdisplay_raw} />
+            <TextBlock label="lvdisplay" content={data.lvm?.lvdisplay_raw} />
+          </div>
         )}
         {activeSub === 'cpu_info' && <TextBlock label="lscpu" content={data.cpu_info} />}
         {activeSub === 'memory_info' && <TextBlock label="meminfo" content={data.memory_info} />}

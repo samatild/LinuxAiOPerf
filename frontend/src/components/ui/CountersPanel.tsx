@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import countersText from '../../assets/counters.txt?raw';
 
 export default function CountersPanel() {
   const [open, setOpen] = useState(false);
-  const [content, setContent] = useState('');
-
-  useEffect(() => {
-    fetch('/counters.txt')
-      .then(r => r.text())
-      .then(setContent)
-      .catch(() => setContent('Could not load counters reference.'));
-  }, []);
 
   return (
     <>
@@ -48,7 +41,7 @@ export default function CountersPanel() {
               </button>
             </div>
             <pre className="mono flex-1 overflow-y-auto px-5 py-4 text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
-              {content}
+              {countersText}
             </pre>
           </>
         )}

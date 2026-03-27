@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ReportMetadata } from '../../types/report';
+import logo from '../../assets/logo.png';
 
 interface Props {
   metadata?: ReportMetadata;
@@ -20,7 +21,7 @@ export default function Header({ metadata, showBack }: Props) {
       <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Linux AIO" className="h-9 w-auto" />
+            <img src={logo} alt="Linux AIO" className="h-9 w-auto" />
             <div>
               <h1 className="text-sm font-semibold text-slate-100 leading-none">
                 Linux AIO Performance

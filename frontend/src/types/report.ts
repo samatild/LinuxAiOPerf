@@ -21,7 +21,15 @@ export interface SysConfigData {
   information?: { runtime_info: string; os_release: string };
   hardware?: { lshw: string; dmidecode: string };
   storage?: { lsscsi?: string; lsblk?: string; df?: string; ls_dev_mapper?: string };
-  lvm?: { svg: string };
+  lvm?: {
+    svg?: string;
+    pvs_raw?: string;
+    vgs_raw?: string;
+    lvs_raw?: string;
+    pvdisplay_raw?: string;
+    vgdisplay_raw?: string;
+    lvdisplay_raw?: string;
+  };
   cpu_info?: string;
   memory_info?: string;
   kernel_params?: string;

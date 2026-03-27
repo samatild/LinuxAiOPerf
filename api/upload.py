@@ -142,6 +142,16 @@ def extract_sysconfig(work_dir: str) -> dict:
     # LVM — generate Graphviz SVG if lvs.txt is non-empty
     lvs_path = os.path.join(work_dir, 'lvs.txt')
     if os.path.exists(lvs_path) and os.path.getsize(lvs_path) > 0:
+        lvm_data: dict = {}
+        # Raw text files
+        for fname, key in [('pvs.txt','pvs_raw'),('vgs.txt','vgs_raw'),('lvs.txt','lvs_raw'),
+                           ('pvdisplay.txt','pvdisplay_raw'),('vgdisplay.txt','vgdisplay_raw'),
+                           ('lvdisplay.txt','lvdisplay_raw')]:
+            p = os.path.join(work_dir, fname)
+            if os.path.exists(p):
+                with open(p) as f:
+                    lvm_data[key] = f.read()
+        # Graphviz SVG diagram
         try:
             orig = os.getcwd()
             os.chdir(work_dir)
@@ -156,13 +166,15 @@ def extract_sysconfig(work_dir: str) -> dict:
             else:
                 svg = svg_result or ''
             if svg:
-                sc['lvm'] = {'svg': svg}
+                lvm_data['svg'] = svg
         except Exception as e:
             log.warning(f'LVM diagram failed: {e}')
             try:
                 os.chdir(orig)
             except Exception:
                 pass
+        if lvm_data:
+            sc['lvm'] = lvm_data
 
     for key, fname in [
         ('cpu_info', 'lscpu.txt'),

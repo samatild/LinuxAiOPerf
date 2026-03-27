@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SysConfigData } from '../../../types/report';
 import SubTabBar from '../../ui/SubTabBar';
 import TextBlock from '../../ui/TextBlock';
+import LvmDiagram from './LvmDiagram';
 
 interface Props { data: SysConfigData; }
 
@@ -27,7 +28,7 @@ export default function SysConfigTab({ data }: Props) {
         case 'information': return !!(data.information?.runtime_info || data.information?.os_release);
         case 'hardware':    return !!(data.hardware?.lshw || data.hardware?.dmidecode);
         case 'storage':     return !!(data.storage?.df || data.storage?.lsblk || data.storage?.lsscsi);
-        case 'lvm':         return !!(data.lvm?.svg || data.lvm?.lvs_raw);
+        case 'lvm':         return !!(data.lvm?.topology || data.lvm?.lvs_raw);
         case 'cpu_info':    return !!data.cpu_info;
         case 'memory_info': return !!data.memory_info;
         case 'kernel_params': return !!data.kernel_params;
@@ -69,13 +70,9 @@ export default function SysConfigTab({ data }: Props) {
         )}
         {activeSub === 'lvm' && (
           <div>
-            {data.lvm?.svg && (
-              <div
-                className="flex justify-center mb-6 p-6 rounded-lg overflow-auto"
-                style={{ background: '#1c2128' }}
-              >
-                {/* SVG is generated with transparent bg + white text/arrows — always needs dark container */}
-                <div dangerouslySetInnerHTML={{ __html: data.lvm.svg }} />
+            {data.lvm?.topology && (
+              <div className="mb-6">
+                <LvmDiagram topology={data.lvm.topology} />
               </div>
             )}
             <TextBlock label="pvs" content={data.lvm?.pvs_raw} />

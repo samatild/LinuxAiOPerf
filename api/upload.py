@@ -32,7 +32,7 @@ from domains.procinfo.pidstat.pidstatio import generate_pidstatio, pidstatio_ext
 from domains.procinfo.pidstat.pidstatmem import generate_pidstatmem, pidstatmem_extract_header_line
 from domains.procinfo.top.topcmd import generate_top
 from domains.procinfo.iotop.iotopcmd import generate_iotop
-from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs, create_graph
+from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('api.upload')
@@ -139,7 +139,7 @@ def extract_sysconfig(work_dir: str) -> dict:
     if storage:
         sc['storage'] = storage
 
-    # LVM — generate Graphviz SVG if lvs.txt is non-empty
+    # LVM — parse topology + raw text; no graphviz needed (diagram rendered in React)
     lvs_path = os.path.join(work_dir, 'lvs.txt')
     if os.path.exists(lvs_path) and os.path.getsize(lvs_path) > 0:
         lvm_data: dict = {}
@@ -151,24 +151,21 @@ def extract_sysconfig(work_dir: str) -> dict:
             if os.path.exists(p):
                 with open(p) as f:
                     lvm_data[key] = f.read()
-        # Graphviz SVG diagram
+        # Structured topology for React diagram
         try:
             orig = os.getcwd()
             os.chdir(work_dir)
-            pvs = parse_pvs()
-            vgs = parse_vgs()
-            lvs = parse_lvs()
-            svg_result = create_graph(pvs, vgs, lvs)
+            pvs = parse_pvs()   # [(pv_name, vg_name, pv_size, pv_free), ...]
+            vgs = parse_vgs()   # [(vg_name, vg_size, vg_free), ...]
+            lvs = parse_lvs()   # [(lv_name, vg_name, lv_size, lv_type, ...), ...]
             os.chdir(orig)
-            # create_graph returns a list of SVG strings (one per VG)
-            if isinstance(svg_result, list):
-                svg = '\n'.join(svg_result)
-            else:
-                svg = svg_result or ''
-            if svg:
-                lvm_data['svg'] = svg
+            lvm_data['topology'] = {
+                'pvs': [{'name': p[0], 'vg': p[1], 'size': p[2], 'free': p[3]} for p in pvs],
+                'vgs': [{'name': v[0], 'size': v[1], 'free': v[2]} for v in vgs],
+                'lvs': [{'name': l[0], 'vg': l[1], 'size': l[2], 'type': l[3]} for l in lvs],
+            }
         except Exception as e:
-            log.warning(f'LVM diagram failed: {e}')
+            log.warning(f'LVM topology parse failed: {e}')
             try:
                 os.chdir(orig)
             except Exception:

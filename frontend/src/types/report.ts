@@ -22,7 +22,11 @@ export interface SysConfigData {
   hardware?: { lshw: string; dmidecode: string };
   storage?: { lsscsi?: string; lsblk?: string; df?: string; ls_dev_mapper?: string };
   lvm?: {
-    svg?: string;
+    topology?: {
+      pvs: { name: string; vg: string; size: string; free: string }[];
+      vgs: { name: string; size: string; free: string }[];
+      lvs: { name: string; vg: string; size: string; type: string }[];
+    };
     pvs_raw?: string;
     vgs_raw?: string;
     lvs_raw?: string;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useLocation, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import type { ReportData } from '../types/report';
+import { getReportData } from '../store/reportStore';
 import Header from '../components/layout/Header';
 import CountersPanel from '../components/ui/CountersPanel';
 import SysConfigTab from '../components/report/sysconfig/SysConfigTab';
@@ -18,8 +19,7 @@ const MAIN_TABS = [
 ];
 
 export default function Report() {
-  const { state } = useLocation();
-  const data = state?.data as ReportData | undefined;
+  const data = getReportData() as ReportData | null;
   const [activeTab, setActiveTab] = useState('sysconfig');
 
   if (!data) return <Navigate to="/" replace />;

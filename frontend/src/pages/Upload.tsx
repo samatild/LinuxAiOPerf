@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUpload } from '../hooks/useUpload';
+import { setReportData } from '../store/reportStore';
 import UploadBox from '../components/upload/UploadBox';
 import Header from '../components/layout/Header';
 import Spinner from '../components/ui/Spinner';
@@ -11,7 +12,8 @@ export default function Upload() {
 
   useEffect(() => {
     if (state.status === 'done') {
-      navigate('/report', { state: { data: state.data } });
+      setReportData(state.data);   // store in memory — no size limit
+      navigate('/report');
     }
   }, [state, navigate]);
 

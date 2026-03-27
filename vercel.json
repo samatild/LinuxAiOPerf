@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/upload.py": { "maxDuration": 60 }
+  },
+  "outputDirectory": "frontend/dist",
+  "installCommand": "pip install -r requirements-api.txt && cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build"
+}

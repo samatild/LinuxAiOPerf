@@ -148,8 +148,13 @@ def extract_sysconfig(work_dir: str) -> dict:
             pvs = parse_pvs()
             vgs = parse_vgs()
             lvs = parse_lvs()
-            svg = create_graph(pvs, vgs, lvs)
+            svg_result = create_graph(pvs, vgs, lvs)
             os.chdir(orig)
+            # create_graph returns a list of SVG strings (one per VG)
+            if isinstance(svg_result, list):
+                svg = '\n'.join(svg_result)
+            else:
+                svg = svg_result or ''
             if svg:
                 sc['lvm'] = {'svg': svg}
         except Exception as e:
@@ -422,6 +427,13 @@ def _parse_top_file(path: str) -> dict:
 
 
 def _parse_iotop_file(path: str) -> dict:
+    """Parse iotop.txt into {timestamp: text_block} chunks.
+
+    Supports two formats:
+    - New: lines like "12:31:30 Total DISK READ..." mark timestamp boundaries;
+      process rows look like: b'12:31:31    8365 be/4 root  ...'
+    - Legacy: starts with weekday names (Mon/Tue/...), timestamp on prev line.
+    """
     chunks: dict[str, str] = {}
     current_ts = None
     lines_buf: list[str] = []
@@ -435,20 +447,33 @@ def _parse_iotop_file(path: str) -> dict:
             s = line.strip()
             if not s:
                 continue
-            if len(s) >= 8 and s[:8].replace(':', '').isdigit():
+
+            # "12:31:30 Total DISK READ ..." — timestamp boundary
+            if 'Total DISK READ' in s:
                 flush()
-                current_ts = s[:8]
+                current_ts = s.split()[0]  # "12:31:30"
                 lines_buf = []
-            elif s[:3] in ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'):
-                flush()
-                current_ts = s
-                lines_buf = []
-            elif 'Total DISK' in s:
                 continue
-            elif current_ts:
+
+            # Skip "Actual DISK READ" / "Current DISK READ" summary lines and column headers
+            if 'Actual DISK' in s or 'Current DISK' in s or s.startswith('TIME') or s.startswith('TID'):
+                continue
+
+            # Process data rows: b'12:31:31    8365 be/4 root ...'  (RHEL/older iotop)
+            if s.startswith("b'") or s.startswith('b"'):
+                inner = s[2:].rstrip("'\"")
+                parts = inner.split(None, 8)
+                if len(parts) >= 7 and parts[1].isdigit():
+                    row = f"{parts[0]} " + ' '.join(parts[1:])
+                    lines_buf.append(row)
+                continue
+
+            # Plain format: "HH:MM:SS   TID  PRIO  USER ..."  (Ubuntu / newer iotop)
+            if current_ts:
                 parts = s.split(None, 8)
-                if len(parts) >= 7 and parts[0].isdigit():
-                    lines_buf.append(f"{current_ts} " + ' '.join(parts[:8]))
+                if len(parts) >= 7 and parts[1].isdigit() and ':' in parts[0]:
+                    lines_buf.append(f"{parts[0]} " + ' '.join(parts[1:]))
+
     flush()
     return chunks
 

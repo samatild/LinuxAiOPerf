@@ -2,16 +2,19 @@ import { useState } from 'react';
 import { useLocation, Navigate } from 'react-router-dom';
 import type { ReportData } from '../types/report';
 import Header from '../components/layout/Header';
+import CountersPanel from '../components/ui/CountersPanel';
 import SysConfigTab from '../components/report/sysconfig/SysConfigTab';
 import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
 import ProcessDetailsTab from '../components/report/process_details/ProcessDetailsTab';
+import AboutTab from '../components/report/AboutTab';
 
 const MAIN_TABS = [
   { id: 'sysconfig',        label: 'System Configuration' },
   { id: 'performance',      label: 'System Performance' },
   { id: 'process_activity', label: 'Process Activity' },
   { id: 'process_details',  label: 'Process Details' },
+  { id: 'about',            label: 'About' },
 ];
 
 export default function Report() {
@@ -29,6 +32,7 @@ export default function Report() {
         case 'performance':      return !!data.performance;
         case 'process_activity': return !!data.process_activity;
         case 'process_details':  return !!data.process_details;
+        case 'about':            return true;
         default: return false;
       }
     })(),
@@ -41,6 +45,7 @@ export default function Report() {
   return (
     <div className="min-h-screen bg-[#0f1117] flex flex-col">
       <Header metadata={data.metadata} showBack />
+      <CountersPanel />
 
       {/* Main tab bar */}
       <div className="bg-[#0f1117] border-b border-[#2d3149] sticky top-[57px] z-40">
@@ -78,6 +83,7 @@ export default function Report() {
         {effectiveTab === 'process_details' && data.process_details && (
           <ProcessDetailsTab data={data.process_details} />
         )}
+        {effectiveTab === 'about' && <AboutTab />}
       </main>
     </div>
   );

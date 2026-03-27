@@ -20,9 +20,7 @@ export default function Header({ metadata, showBack }: Props) {
       <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-              L
-            </div>
+            <img src="/logo.png" alt="Linux AIO" className="h-9 w-auto" />
             <div>
               <h1 className="text-sm font-semibold text-slate-100 leading-none">
                 Linux AIO Performance

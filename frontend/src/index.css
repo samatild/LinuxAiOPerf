@@ -2,64 +2,64 @@
 
 /* ── Design Tokens ─────────────────────────────────────────────── */
 :root {
-  /* Dark theme (default) */
-  --bg-base:     #0d0f18;
-  --bg-surface:  #13162b;
-  --bg-elevated: #1a1d2e;
-  --bg-muted:    #1e2235;
-  --bg-hover:    #262b44;
+  /* Dark theme — matches linuxaio.matildes.dev */
+  --bg-base:     #0d1117;
+  --bg-surface:  #161b22;
+  --bg-elevated: #1c2128;
+  --bg-muted:    #21262d;
+  --bg-hover:    #30363d;
 
-  --border:      #2d3149;
-  --border-subtle: #1e2235;
+  --border:        #30363d;
+  --border-subtle: #21262d;
 
-  /* Brand (logo purple palette) */
-  --accent:          #863bff;
-  --accent-hover:    #9655ff;
-  --accent-active:   #7e14ff;
-  --accent-fg:       #ffffff;
-  --accent-subtle:   rgba(134, 59, 255, 0.12);
-  --accent-secondary: #47bfff;
+  --accent:           #3fb950;
+  --accent-hover:     #46c35f;
+  --accent-active:    #2ea043;
+  --accent-fg:        #000000;
+  --accent-subtle:    rgba(63, 185, 80, 0.1);
+  --accent-blue:      #58a6ff;
+  --accent-purple:    #a371f7;
+  --accent-secondary: #58a6ff;
 
-  /* Text */
-  --text-primary:   #f0eeff;
-  --text-secondary: #a0a8c2;
-  --text-muted:     #5a6280;
-  --text-dim:       #3a4060;
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #6e7681;
+  --text-dim:       #484f58;
 
-  /* Status */
-  --status-success: #4ade80;
-  --status-warning: #fbbf24;
-  --status-error:   #f87171;
+  --status-success: #3fb950;
+  --status-warning: #d29922;
+  --status-error:   #f85149;
 
-  /* Plotly chart bg (matches --bg-elevated) */
-  --chart-bg: #1a1d2e;
+  --chart-bg: #161b22;
 }
 
 :root[data-theme="light"] {
-  --bg-base:     #f6f4fb;
-  --bg-surface:  #ffffff;
-  --bg-elevated: #f0ecfb;
-  --bg-muted:    #e8e2f8;
-  --bg-hover:    #ddd5f5;
+  --bg-base:     #ffffff;
+  --bg-surface:  #f6f8fa;
+  --bg-elevated: #eaeef2;
+  --bg-muted:    #d0d7de;
+  --bg-hover:    #c6cdd5;
 
-  --border:      #cdc5e8;
-  --border-subtle: #e4dffa;
+  --border:        #d0d7de;
+  --border-subtle: #eaeef2;
 
-  --accent:          #7e14ff;
-  --accent-hover:    #863bff;
-  --accent-active:   #6b0fd4;
-  --accent-fg:       #ffffff;
-  --accent-subtle:   rgba(126, 20, 255, 0.1);
-  --accent-secondary: #0088cc;
+  --accent:           #1a7f37;
+  --accent-hover:     #2ea043;
+  --accent-active:    #116329;
+  --accent-fg:        #ffffff;
+  --accent-subtle:    rgba(26, 127, 55, 0.1);
+  --accent-blue:      #0969da;
+  --accent-purple:    #8250df;
+  --accent-secondary: #0969da;
 
-  --text-primary:   #111827;
-  --text-secondary: #4b5563;
-  --text-muted:     #9ca3af;
-  --text-dim:       #d1d5db;
+  --text-primary:   #1f2328;
+  --text-secondary: #656d76;
+  --text-muted:     #9198a1;
+  --text-dim:       #d0d7de;
 
-  --status-success: #16a34a;
-  --status-warning: #d97706;
-  --status-error:   #dc2626;
+  --status-success: #1a7f37;
+  --status-warning: #9a6700;
+  --status-error:   #d1242f;
 
   --chart-bg: #ffffff;
 }
@@ -82,9 +82,9 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── Cursor ─────────────────────────────────────────────────────── */
+/* ── Cursor ──────────────────────────────────────────────────────── */
 button:not(:disabled), a, [role="button"] { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 
-
+/* ── Utility ─────────────────────────────────────────────────────── */
 .mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace; }

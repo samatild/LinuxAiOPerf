@@ -13,7 +13,7 @@ export default function FigureGrid({ figures, emptyMessage = 'No data available'
   return (
     <div className="space-y-4">
       {figures.map((fig, i) => (
-        <div key={i} className="bg-[#1a1d27] border border-[#2d3149] rounded-xl p-3">
+        <div key={i} className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
           <PlotlyChart figure={fig} />
         </div>
       ))}

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import type { ReportData } from '../types/report';
 import { getReportData } from '../store/reportStore';
 import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
 import CountersPanel from '../components/ui/CountersPanel';
 import SysConfigTab from '../components/report/sysconfig/SysConfigTab';
 import PerformanceTab from '../components/report/performance/PerformanceTab';
@@ -94,6 +95,7 @@ export default function Report() {
         )}
         {effectiveTab === 'about' && <AboutTab />}
       </main>
+      <Footer />
     </div>
   );
 }

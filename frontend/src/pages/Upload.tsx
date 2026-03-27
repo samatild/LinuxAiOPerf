@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock, Zap, BarChart2 } from 'lucide-react';
 import { useUpload } from '../hooks/useUpload';
 import { setReportData } from '../store/reportStore';
 import UploadBox from '../components/upload/UploadBox';
 import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
 import Spinner from '../components/ui/Spinner';
 
 export default function Upload() {
@@ -69,16 +71,16 @@ export default function Upload() {
 
           <div className="grid grid-cols-3 gap-4 text-center">
             {[
-              { icon: '🔒', title: 'Private', desc: 'Data processed in memory, deleted after use' },
-              { icon: '⚡', title: 'Fast', desc: 'Interactive charts, no page reloads' },
-              { icon: '📊', title: 'Comprehensive', desc: 'CPU, disk, memory, network, processes' },
+              { icon: <Lock size={22} />,    title: 'Private',       desc: 'Data processed in memory, deleted after use' },
+              { icon: <Zap size={22} />,     title: 'Fast',          desc: 'Interactive charts, no page reloads' },
+              { icon: <BarChart2 size={22} />, title: 'Comprehensive', desc: 'CPU, disk, memory, network, processes' },
             ].map(({ icon, title, desc }) => (
               <div
                 key={title}
                 className="rounded-xl p-4"
                 style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
               >
-                <div className="text-2xl mb-2">{icon}</div>
+                <div className="flex justify-center mb-2" style={{ color: 'var(--accent)' }}>{icon}</div>
                 <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</div>
                 <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{desc}</div>
               </div>
@@ -86,6 +88,7 @@ export default function Upload() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

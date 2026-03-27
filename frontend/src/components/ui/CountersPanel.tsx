@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BookOpen, X } from 'lucide-react';
 import countersText from '../../assets/counters.txt?raw';
 
 export default function CountersPanel() {
@@ -10,7 +11,7 @@ export default function CountersPanel() {
       <button
         onClick={() => setOpen(o => !o)}
         title="Counters Reference"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg transition-all duration-200"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium shadow-lg transition-all duration-200"
         style={
           open
             ? { background: 'var(--accent)', color: 'var(--accent-fg)' }
@@ -21,7 +22,7 @@ export default function CountersPanel() {
               }
         }
       >
-        <span>📊</span>
+        <BookOpen size={14} />
         <span>Counters</span>
       </button>
 
@@ -44,10 +45,10 @@ export default function CountersPanel() {
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="text-xl leading-none p-1 transition-colors"
-                style={{ color: 'var(--text-secondary)' }}
+                className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+                style={{ color: 'var(--text-muted)' }}
               >
-                ×
+                <X size={14} />
               </button>
             </div>
             <pre className="mono flex-1 overflow-y-auto px-5 py-4 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>

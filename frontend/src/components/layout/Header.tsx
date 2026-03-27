@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Sun, Moon, Monitor, Server, Cpu, Calendar } from 'lucide-react';
 import type { ReportMetadata } from '../../types/report';
 import { useTheme } from '../../hooks/useTheme';
 import logo from '../../assets/logo.png';
@@ -8,7 +9,7 @@ interface Props {
   showBack?: boolean;
 }
 
-function Chip({ icon, text }: { icon: string; text: string }) {
+function Chip({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
@@ -18,7 +19,7 @@ function Chip({ icon, text }: { icon: string; text: string }) {
         color: 'var(--text-secondary)',
       }}
     >
-      <span>{icon}</span> {text}
+      {icon} {text}
     </span>
   );
 }
@@ -36,7 +37,7 @@ function ThemeToggle() {
         color: 'var(--text-secondary)',
       }}
     >
-      {theme === 'dark' ? '☀️' : '🌙'}
+      {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
     </button>
   );
 }
@@ -54,7 +55,14 @@ export default function Header({ metadata, showBack }: Props) {
       <div className="w-[80%] max-w-[1600px] mx-auto flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Linux AIO" className="h-9 w-auto" />
+            {/* Logo — clickable back to home when on report page */}
+            {showBack ? (
+              <Link to="/" title="New Report">
+                <img src={logo} alt="Linux AIO" className="h-9 w-auto" />
+              </Link>
+            ) : (
+              <img src={logo} alt="Linux AIO" className="h-9 w-auto" />
+            )}
             <div>
               <h1 className="text-sm font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
                 Linux AIO Performance
@@ -66,11 +74,10 @@ export default function Header({ metadata, showBack }: Props) {
           </div>
           {metadata && (
             <div className="flex flex-wrap gap-2 ml-4">
-              {metadata.hostname && <Chip icon="🖥" text={metadata.hostname} />}
-              {metadata.os && <Chip icon="🐧" text={metadata.os} />}
-              {metadata.kernel && <Chip icon="⚙" text={metadata.kernel} />}
-              {metadata.cpu_model && <Chip icon="🔲" text={metadata.cpu_model} />}
-              {metadata.collection_date && <Chip icon="📅" text={metadata.collection_date} />}
+              {metadata.hostname && <Chip icon={<Monitor size={11} />} text={metadata.hostname} />}
+              {metadata.os && <Chip icon={<Server size={11} />} text={metadata.os} />}
+              {metadata.kernel && <Chip icon={<Cpu size={11} />} text={metadata.kernel} />}
+              {metadata.collection_date && <Chip icon={<Calendar size={11} />} text={metadata.collection_date} />}
             </div>
           )}
         </div>

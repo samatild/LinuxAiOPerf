@@ -32,7 +32,7 @@ export default function ProcessDetailsTab({ data }: Props) {
       <SubTabBar tabs={tabs} active={activeSub} onChange={setSub} />
       {chunkData
         ? <DataTable data={chunkData} />
-        : <p className="text-slate-500 text-center py-12">No data available</p>
+        : <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>No data available</p>
       }
     </div>
   );

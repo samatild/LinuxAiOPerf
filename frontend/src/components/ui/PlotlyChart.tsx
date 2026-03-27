@@ -7,45 +7,52 @@ interface Props {
   className?: string;
 }
 
-// Minimal layout overrides on top of the figure layout.
-// We use the 'plotly_dark' template for proper dark theming
-// and only override things the template doesn't cover.
+function getCSSVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 function buildLayout(figure: PlotlyFigure): Plotly.Layout {
   const fl = (figure.layout ?? {}) as Record<string, unknown>;
   const fxaxis = (fl.xaxis ?? {}) as Record<string, unknown>;
   const fyaxis = (fl.yaxis ?? {}) as Record<string, unknown>;
 
+  const chartBg = getCSSVar('--chart-bg') || '#1a1d2e';
+  const borderColor = getCSSVar('--border') || '#2d3149';
+  const textColor = getCSSVar('--text-primary') || '#f0eeff';
+  const accentColor = getCSSVar('--accent') || '#863bff';
+  const bgMuted = getCSSVar('--bg-muted') || '#1e2235';
+  const bgElevated = getCSSVar('--bg-elevated') || '#1a1d2e';
+
   return {
     ...fl,
     template: 'plotly_dark',
-    paper_bgcolor: '#1a1d27',
-    plot_bgcolor: '#1a1d27',
-    font: { color: '#e2e8f0', family: 'Inter, system-ui, sans-serif', size: 12 },
+    paper_bgcolor: chartBg,
+    plot_bgcolor: chartBg,
+    font: { color: textColor, family: 'Inter, system-ui, sans-serif', size: 12 },
     margin: { l: 50, r: 20, t: 40, b: 50 },
-    // Deep-merge axes so we don't lose rangeselector colors from figure layout
     xaxis: {
-      gridcolor: '#2d3149',
-      linecolor: '#2d3149',
-      zerolinecolor: '#2d3149',
+      gridcolor: borderColor,
+      linecolor: borderColor,
+      zerolinecolor: borderColor,
       ...fxaxis,
       rangeselector: {
-        bgcolor: '#21263a',
-        activecolor: '#6366f1',
-        bordercolor: '#2d3149',
+        bgcolor: bgMuted,
+        activecolor: accentColor,
+        bordercolor: borderColor,
         borderwidth: 1,
-        font: { color: '#e2e8f0', size: 11 },
+        font: { color: textColor, size: 11 },
         ...((fxaxis.rangeselector as object) ?? {}),
       } as object,
     },
     yaxis: {
-      gridcolor: '#2d3149',
-      linecolor: '#2d3149',
-      zerolinecolor: '#2d3149',
+      gridcolor: borderColor,
+      linecolor: borderColor,
+      zerolinecolor: borderColor,
       ...fyaxis,
     },
     legend: {
-      bgcolor: 'rgba(33,38,58,0.85)',
-      bordercolor: '#2d3149',
+      bgcolor: bgElevated + 'dd',
+      bordercolor: borderColor,
       borderwidth: 1,
       ...((fl.legend as object) ?? {}),
     },
@@ -64,7 +71,15 @@ export default function PlotlyChart({ figure, className }: Props) {
 
   useEffect(() => {
     if (!ref.current) return;
+    const theme = document.documentElement.getAttribute('data-theme') ?? 'dark';
     const layout = buildLayout(figure);
+
+    if (theme === 'light') {
+      (layout as unknown as Record<string, unknown>).template = 'plotly_white';
+      (layout as unknown as Record<string, unknown>).paper_bgcolor = getCSSVar('--chart-bg') || '#ffffff';
+      (layout as unknown as Record<string, unknown>).plot_bgcolor = getCSSVar('--chart-bg') || '#ffffff';
+    }
+
     Plotly.newPlot(ref.current, figure.data as Plotly.Data[], layout, CONFIG);
 
     const observer = new ResizeObserver(() => {

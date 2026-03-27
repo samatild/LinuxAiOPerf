@@ -4,32 +4,47 @@ export default function AboutTab() {
       <div className="flex items-center gap-5">
         <img src="/logo.png" alt="Linux AIO" className="h-16 w-auto" />
         <div>
-          <h2 className="text-2xl font-bold text-slate-100">Linux AIO Performance</h2>
-          <p className="text-slate-400 mt-1">All-in-one Linux Performance Collector &amp; Analyser</p>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Linux AIO Performance</h2>
+          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>All-in-one Linux Performance Collector &amp; Analyser</p>
         </div>
       </div>
 
-      <div className="bg-[#1a1d27] border border-[#2d3149] rounded-xl divide-y divide-[#2d3149]">
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+      >
         {[
           { label: 'Version', value: '2.2.0' },
           { label: 'License', value: 'MIT' },
           { label: 'Author', value: 'Samuel Matildes' },
-        ].map(({ label, value }) => (
-          <div key={label} className="flex items-center justify-between px-5 py-3">
-            <span className="text-sm text-slate-400">{label}</span>
-            <span className="text-sm font-medium text-slate-200">{value}</span>
+        ].map(({ label, value }, i, arr) => (
+          <div
+            key={label}
+            className="flex items-center justify-between px-5 py-3"
+            style={i < arr.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}
+          >
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{value}</span>
           </div>
         ))}
       </div>
 
-      <div className="bg-[#1a1d27] border border-[#2d3149] rounded-xl p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Links</h3>
+      <div
+        className="rounded-xl p-5 space-y-3"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+      >
+        <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Links</h3>
         <div className="flex flex-wrap gap-3">
           <a
             href="https://github.com/samatild/LinuxAiOPerf"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21263a] border border-[#2d3149] text-sm text-slate-300 hover:border-indigo-500 hover:text-slate-100 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+            }}
           >
             ★ GitHub Repository
           </a>
@@ -37,23 +52,34 @@ export default function AboutTab() {
             href="https://linuxaioperf.matildes.dev"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#21263a] border border-[#2d3149] text-sm text-slate-300 hover:border-indigo-500 hover:text-slate-100 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+            }}
           >
             🌐 Hosted App
           </a>
         </div>
       </div>
 
-      <div className="bg-[#1a1d27] border border-[#2d3149] rounded-xl p-5 space-y-2">
-        <h3 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Privacy</h3>
-        <p className="text-sm text-slate-400 leading-relaxed">
+      <div
+        className="rounded-xl p-5 space-y-2"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+      >
+        <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>Privacy</h3>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           No personal information is collected. Uploaded data is processed in memory and discarded immediately after the report is generated. No data is stored or transmitted to third parties.
         </p>
       </div>
 
-      <div className="bg-[#1a1d27] border border-[#2d3149] rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-3">MIT License</h3>
-        <pre className="mono text-xs text-slate-400 whitespace-pre-wrap leading-relaxed">
+      <div
+        className="rounded-xl p-5"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
+      >
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>MIT License</h3>
+        <pre className="mono text-xs whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--text-muted)' }}>
 {`Copyright (c) 2023 Samuel Matildes
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -74,3 +100,4 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.`}
     </div>
   );
 }
+

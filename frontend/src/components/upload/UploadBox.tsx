@@ -28,20 +28,40 @@ export default function UploadBox({ onFile, disabled }: Props) {
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      className={`relative flex flex-col items-center justify-center gap-4 p-12 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+      className="relative flex flex-col items-center justify-center gap-4 p-12 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200"
+      style={
         dragging
-          ? 'border-indigo-400 bg-indigo-950/30'
+          ? { borderColor: 'var(--accent)', background: 'var(--accent-subtle)' }
           : disabled
-          ? 'border-[#2d3149] opacity-50 cursor-not-allowed'
-          : 'border-[#2d3149] hover:border-indigo-500 hover:bg-[#21263a]/50'
-      }`}
+          ? { borderColor: 'var(--border)', opacity: 0.5, cursor: 'not-allowed' }
+          : { borderColor: 'var(--border)' }
+      }
+      onMouseEnter={e => {
+        if (!dragging && !disabled) {
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-hover)';
+          (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-elevated)';
+        }
+      }}
+      onMouseLeave={e => {
+        if (!dragging && !disabled) {
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)';
+          (e.currentTarget as HTMLDivElement).style.background = '';
+        }
+      }}
     >
-      <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-3xl">
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+        style={{
+          background: 'var(--accent-subtle)',
+          border: '1px solid var(--accent)',
+          opacity: 0.8,
+        }}
+      >
         📦
       </div>
       <div className="text-center">
-        <p className="text-slate-200 font-semibold text-lg">Drop your archive here</p>
-        <p className="text-slate-500 text-sm mt-1">or click to browse — .tar.gz files only</p>
+        <p className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Drop your archive here</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>or click to browse — .tar.gz files only</p>
       </div>
       <input
         ref={inputRef}

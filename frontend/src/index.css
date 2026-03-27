@@ -1,30 +1,86 @@
 @import "tailwindcss";
 
+/* ── Design Tokens ─────────────────────────────────────────────── */
 :root {
-  --color-bg: #0f1117;
-  --color-surface: #1a1d27;
-  --color-surface-raised: #21263a;
-  --color-border: #2d3149;
-  --color-text: #e2e8f0;
-  --color-text-muted: #8892a4;
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
+  /* Dark theme (default) */
+  --bg-base:     #0d0f18;
+  --bg-surface:  #13162b;
+  --bg-elevated: #1a1d2e;
+  --bg-muted:    #1e2235;
+  --bg-hover:    #262b44;
+
+  --border:      #2d3149;
+  --border-subtle: #1e2235;
+
+  /* Brand (logo purple palette) */
+  --accent:          #863bff;
+  --accent-hover:    #9655ff;
+  --accent-active:   #7e14ff;
+  --accent-fg:       #ffffff;
+  --accent-subtle:   rgba(134, 59, 255, 0.12);
+  --accent-secondary: #47bfff;
+
+  /* Text */
+  --text-primary:   #f0eeff;
+  --text-secondary: #a0a8c2;
+  --text-muted:     #5a6280;
+  --text-dim:       #3a4060;
+
+  /* Status */
+  --status-success: #4ade80;
+  --status-warning: #fbbf24;
+  --status-error:   #f87171;
+
+  /* Plotly chart bg (matches --bg-elevated) */
+  --chart-bg: #1a1d2e;
 }
 
-* { box-sizing: border-box; }
+:root[data-theme="light"] {
+  --bg-base:     #f5f2ff;
+  --bg-surface:  #ffffff;
+  --bg-elevated: #ede6ff;
+  --bg-muted:    #e8e0ff;
+  --bg-hover:    #ddd4ff;
+
+  --border:      #c8bbee;
+  --border-subtle: #ddd4ff;
+
+  --accent:          #7e14ff;
+  --accent-hover:    #863bff;
+  --accent-active:   #6b0fd4;
+  --accent-fg:       #ffffff;
+  --accent-subtle:   rgba(126, 20, 255, 0.1);
+  --accent-secondary: #0088cc;
+
+  --text-primary:   #1a1025;
+  --text-secondary: #5a4e7a;
+  --text-muted:     #9080b0;
+  --text-dim:       #bbaae0;
+
+  --status-success: #16a34a;
+  --status-warning: #d97706;
+  --status-error:   #dc2626;
+
+  --chart-bg: #ffffff;
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
   margin: 0;
+  min-height: 100vh;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-pre, code, .mono {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
-}
-
+/* ── Scrollbar ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3d4460; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Utility classes ────────────────────────────────────────────── */
+.mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace; }

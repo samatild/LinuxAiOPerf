@@ -10,11 +10,16 @@ export default function CountersPanel() {
       <button
         onClick={() => setOpen(o => !o)}
         title="Counters Reference"
-        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg transition-all duration-200 ${
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium shadow-lg transition-all duration-200"
+        style={
           open
-            ? 'bg-indigo-600 text-white shadow-indigo-900/50'
-            : 'bg-[#21263a] border border-[#2d3149] text-slate-300 hover:border-indigo-500 hover:text-slate-100 shadow-black/40'
-        }`}
+            ? { background: 'var(--accent)', color: 'var(--accent-fg)' }
+            : {
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }
+        }
       >
         <span>📊</span>
         <span>Counters</span>
@@ -22,25 +27,30 @@ export default function CountersPanel() {
 
       {/* Sliding panel */}
       <div
-        className={`fixed top-0 right-0 h-full z-40 bg-[#0f1117] border-l border-[#2d3149] shadow-2xl transition-all duration-300 flex flex-col ${
+        className={`fixed top-0 right-0 h-full z-40 shadow-2xl transition-all duration-300 flex flex-col ${
           open ? 'w-[480px]' : 'w-0 overflow-hidden'
         }`}
+        style={{ background: 'var(--bg-base)', borderLeft: '1px solid var(--border)' }}
       >
         {open && (
           <>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2d3149] shrink-0">
+            <div
+              className="flex items-center justify-between px-5 py-4 shrink-0"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
               <div>
-                <h3 className="text-sm font-semibold text-slate-100">Counters Reference</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Metric descriptions and units</p>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Counters Reference</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Metric descriptions and units</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="text-slate-400 hover:text-slate-200 text-xl leading-none p-1"
+                className="text-xl leading-none p-1 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
               >
                 ×
               </button>
             </div>
-            <pre className="mono flex-1 overflow-y-auto px-5 py-4 text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
+            <pre className="mono flex-1 overflow-y-auto px-5 py-4 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
               {countersText}
             </pre>
           </>

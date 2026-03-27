@@ -43,25 +43,26 @@ export default function Report() {
     : (tabs.find(t => t.available)?.id ?? activeTab);
 
   return (
-    <div className="min-h-screen bg-[#0f1117] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
       <Header metadata={data.metadata} showBack />
       <CountersPanel />
 
       {/* Main tab bar */}
-      <div className="bg-[#0f1117] border-b border-[#2d3149] sticky top-[57px] z-40">
+      <div className="sticky top-[57px] z-40" style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-screen-2xl mx-auto px-6 flex overflow-x-auto">
           {tabs.map(({ id, label, available }) => (
             <button
               key={id}
               onClick={() => available && setActiveTab(id)}
               disabled={!available}
-              className={`px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150 ${
+              className="px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150"
+              style={
                 effectiveTab === id
-                  ? 'border-indigo-500 text-indigo-400'
+                  ? { borderBottomColor: 'var(--accent)', color: 'var(--accent)' }
                   : available
-                  ? 'border-transparent text-slate-400 hover:text-slate-200 hover:border-[#2d3149]'
-                  : 'border-transparent text-slate-600 cursor-not-allowed'
-              }`}
+                  ? { borderBottomColor: 'transparent', color: 'var(--text-secondary)' }
+                  : { borderBottomColor: 'transparent', color: 'var(--text-dim)', cursor: 'not-allowed' }
+              }
             >
               {label}
             </button>

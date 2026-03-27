@@ -53,16 +53,23 @@ export default function DataTable({ data }: Props) {
     return '';
   }
 
+  const controlStyle = {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+  };
+
   return (
     <div>
       {/* Controls */}
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Timestamp</label>
+          <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Timestamp</label>
           <select
             value={selectedTs}
             onChange={e => setSelectedTs(e.target.value)}
-            className="bg-[#21263a] border border-[#2d3149] text-slate-300 text-sm px-3 py-1.5 rounded-md w-56 focus:outline-none focus:border-indigo-500"
+            className="text-sm px-3 py-1.5 rounded-md w-56 focus:outline-none"
+            style={{ ...controlStyle, outlineColor: 'var(--accent)' }}
           >
             {timestamps.map(ts => (
               <option key={ts} value={ts}>{ts}</option>
@@ -71,22 +78,24 @@ export default function DataTable({ data }: Props) {
         </div>
         {cmdIdx >= 0 && (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Filter command</label>
+            <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Filter command</label>
             <input
               type="text"
               placeholder="regex / name..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="bg-[#21263a] border border-[#2d3149] text-slate-300 text-sm px-3 py-1.5 rounded-md w-48 focus:outline-none focus:border-indigo-500"
+              className="text-sm px-3 py-1.5 rounded-md w-48 focus:outline-none"
+              style={controlStyle}
             />
           </div>
         )}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Show</label>
+          <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Show</label>
           <select
             value={topN === 'all' ? 'all' : String(topN)}
             onChange={e => setTopN(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-            className="bg-[#21263a] border border-[#2d3149] text-slate-300 text-sm px-3 py-1.5 rounded-md focus:outline-none focus:border-indigo-500"
+            className="text-sm px-3 py-1.5 rounded-md focus:outline-none"
+            style={controlStyle}
           >
             {[10, 25, 50, 100].map(n => <option key={n} value={n}>Top {n}</option>)}
             <option value="all">All</option>
@@ -95,16 +104,20 @@ export default function DataTable({ data }: Props) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-[#2d3149]">
+      <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid var(--border)' }}>
         <div className="max-h-[560px] overflow-y-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="sticky top-0 bg-[#21263a] z-10">
+            <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-muted)' }}>
               <tr>
                 {headers.map((h, i) => (
                   <th
                     key={i}
                     onClick={() => handleSort(i)}
-                    className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400 cursor-pointer select-none hover:text-indigo-400 whitespace-nowrap border-b border-[#2d3149]"
+                    className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap"
+                    style={{
+                      color: sortCol === i ? 'var(--accent)' : 'var(--text-secondary)',
+                      borderBottom: '1px solid var(--border)',
+                    }}
                   >
                     {h}
                     {sortCol === i && <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>}
@@ -114,7 +127,13 @@ export default function DataTable({ data }: Props) {
             </thead>
             <tbody>
               {filteredRows.map((row, ri) => (
-                <tr key={ri} className="border-b border-[#2d3149]/50 hover:bg-[#21263a]/60 transition-colors">
+                <tr
+                  key={ri}
+                  className="transition-colors"
+                  style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'var(--bg-hover)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}
+                >
                   {row.map((cell, ci) => (
                     <td key={ci} className={`px-3 py-1.5 mono text-xs whitespace-nowrap ${cellClass(headers[ci], cell)}`}>
                       {String(cell)}
@@ -124,7 +143,7 @@ export default function DataTable({ data }: Props) {
               ))}
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={headers.length} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={headers.length} className="px-3 py-8 text-center" style={{ color: 'var(--text-muted)' }}>
                     No data
                   </td>
                 </tr>

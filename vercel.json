@@ -7,6 +7,6 @@
     "api/upload.py": { "maxDuration": 60 }
   },
   "outputDirectory": "frontend/dist",
-  "installCommand": "pip install --break-system-packages -r requirements-api.txt && cd frontend && npm install",
+  "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build"
 }

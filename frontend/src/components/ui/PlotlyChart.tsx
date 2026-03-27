@@ -12,55 +12,49 @@ function getCSSVar(name: string): string {
 }
 
 function buildLayout(figure: PlotlyFigure): Plotly.Layout {
-  const fl = (figure.layout ?? {}) as Record<string, unknown>;
-  const fxaxis = (fl.xaxis ?? {}) as Record<string, unknown>;
-  const fyaxis = (fl.yaxis ?? {}) as Record<string, unknown>;
+  const isDark = (document.documentElement.getAttribute('data-theme') ?? 'dark') !== 'light';
 
-  const chartBg = getCSSVar('--chart-bg') || '#1a1d2e';
-  const borderColor = getCSSVar('--border') || '#2d3149';
-  const textColor = getCSSVar('--text-primary') || '#f0eeff';
-  const accentColor = getCSSVar('--accent') || '#863bff';
-  const bgMuted = getCSSVar('--bg-muted') || '#1e2235';
-  const bgElevated = getCSSVar('--bg-elevated') || '#1a1d2e';
+  const chartBg    = getCSSVar('--chart-bg')      || (isDark ? '#1a1d2e' : '#ffffff');
+  const border     = getCSSVar('--border')         || (isDark ? '#2d3149' : '#cdc5e8');
+  const textColor  = getCSSVar('--text-primary')   || (isDark ? '#f0eeff' : '#111827');
+  const accent     = getCSSVar('--accent')         || '#863bff';
+  const bgMuted    = getCSSVar('--bg-muted')       || (isDark ? '#1e2235' : '#e8e2f8');
+  const bgSurface  = getCSSVar('--bg-surface')     || (isDark ? '#13162b' : '#ffffff');
+
+  const fl      = (figure.layout ?? {}) as Record<string, unknown>;
+  const fxaxis  = (fl.xaxis  ?? {}) as Record<string, unknown>;
+  const fyaxis  = (fl.yaxis  ?? {}) as Record<string, unknown>;
 
   return {
     ...fl,
-    template: 'plotly_dark',
-    paper_bgcolor: chartBg,
-    plot_bgcolor: chartBg,
+    template:       isDark ? 'plotly_dark' : 'plotly_white',
+    paper_bgcolor:  chartBg,
+    plot_bgcolor:   chartBg,
     font: { color: textColor, family: 'Inter, system-ui, sans-serif', size: 12 },
     margin: { l: 50, r: 20, t: 40, b: 50 },
     xaxis: {
-      gridcolor: borderColor,
-      linecolor: borderColor,
-      zerolinecolor: borderColor,
+      gridcolor: border, linecolor: border, zerolinecolor: border,
       ...fxaxis,
       rangeselector: {
-        bgcolor: bgMuted,
-        activecolor: accentColor,
-        bordercolor: borderColor,
-        borderwidth: 1,
+        bgcolor: bgMuted, activecolor: accent,
+        bordercolor: border, borderwidth: 1,
         font: { color: textColor, size: 11 },
         ...((fxaxis.rangeselector as object) ?? {}),
       } as object,
     },
     yaxis: {
-      gridcolor: borderColor,
-      linecolor: borderColor,
-      zerolinecolor: borderColor,
+      gridcolor: border, linecolor: border, zerolinecolor: border,
       ...fyaxis,
     },
     legend: {
-      bgcolor: bgElevated + 'dd',
-      bordercolor: borderColor,
-      borderwidth: 1,
+      bgcolor: bgSurface, bordercolor: border, borderwidth: 1,
       ...((fl.legend as object) ?? {}),
     },
   } as unknown as Plotly.Layout;
 }
 
 const CONFIG: Partial<Plotly.Config> = {
-  displayModeBar: true,
+  displayModeBar: 'hover',
   displaylogo: false,
   modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
   responsive: true,
@@ -69,26 +63,26 @@ const CONFIG: Partial<Plotly.Config> = {
 export default function PlotlyChart({ figure, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
+  // Re-render when figure changes OR when theme changes (listen for data-theme mutations)
   useEffect(() => {
     if (!ref.current) return;
-    const theme = document.documentElement.getAttribute('data-theme') ?? 'dark';
-    const layout = buildLayout(figure);
+    Plotly.newPlot(ref.current, figure.data as Plotly.Data[], buildLayout(figure), CONFIG);
 
-    if (theme === 'light') {
-      (layout as unknown as Record<string, unknown>).template = 'plotly_white';
-      (layout as unknown as Record<string, unknown>).paper_bgcolor = getCSSVar('--chart-bg') || '#ffffff';
-      (layout as unknown as Record<string, unknown>).plot_bgcolor = getCSSVar('--chart-bg') || '#ffffff';
-    }
-
-    Plotly.newPlot(ref.current, figure.data as Plotly.Data[], layout, CONFIG);
-
-    const observer = new ResizeObserver(() => {
+    const resizeObs = new ResizeObserver(() => {
       if (ref.current) Plotly.Plots.resize(ref.current);
     });
-    observer.observe(ref.current);
+    resizeObs.observe(ref.current);
+
+    // Redraw when theme toggle changes data-theme on <html>
+    const themeObs = new MutationObserver(() => {
+      if (ref.current)
+        Plotly.react(ref.current, figure.data as Plotly.Data[], buildLayout(figure), CONFIG);
+    });
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     return () => {
-      observer.disconnect();
+      resizeObs.disconnect();
+      themeObs.disconnect();
       if (ref.current) Plotly.purge(ref.current);
     };
   }, [figure]);

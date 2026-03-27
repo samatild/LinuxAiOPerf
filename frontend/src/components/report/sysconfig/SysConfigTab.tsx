@@ -70,7 +70,11 @@ export default function SysConfigTab({ data }: Props) {
         {activeSub === 'lvm' && (
           <div>
             {data.lvm?.svg && (
-              <div className="flex justify-center mb-6 p-4 bg-white rounded-lg overflow-auto">
+              <div
+                className="flex justify-center mb-6 p-6 rounded-lg overflow-auto"
+                style={{ background: '#1a1d2e' }}
+              >
+                {/* SVG is generated with transparent bg + white text/arrows — always needs dark container */}
                 <div dangerouslySetInnerHTML={{ __html: data.lvm.svg }} />
               </div>
             )}

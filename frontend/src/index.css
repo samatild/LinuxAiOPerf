@@ -36,26 +36,26 @@
 }
 
 :root[data-theme="light"] {
-  --bg-base:     #f5f2ff;
+  --bg-base:     #f4f6f9;
   --bg-surface:  #ffffff;
-  --bg-elevated: #ede6ff;
-  --bg-muted:    #e8e0ff;
-  --bg-hover:    #ddd4ff;
+  --bg-elevated: #f0f2f6;
+  --bg-muted:    #e8eaf0;
+  --bg-hover:    #dde0ea;
 
-  --border:      #c8bbee;
-  --border-subtle: #ddd4ff;
+  --border:      #d0d4e0;
+  --border-subtle: #e4e7ef;
 
   --accent:          #7e14ff;
   --accent-hover:    #863bff;
   --accent-active:   #6b0fd4;
   --accent-fg:       #ffffff;
-  --accent-subtle:   rgba(126, 20, 255, 0.1);
+  --accent-subtle:   rgba(126, 20, 255, 0.08);
   --accent-secondary: #0088cc;
 
-  --text-primary:   #1a1025;
-  --text-secondary: #5a4e7a;
-  --text-muted:     #9080b0;
-  --text-dim:       #bbaae0;
+  --text-primary:   #111827;
+  --text-secondary: #4b5563;
+  --text-muted:     #9ca3af;
+  --text-dim:       #d1d5db;
 
   --status-success: #16a34a;
   --status-warning: #d97706;
@@ -82,5 +82,9 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ── Utility classes ────────────────────────────────────────────── */
+/* ── Cursor ─────────────────────────────────────────────────────── */
+button:not(:disabled), a, [role="button"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+
 .mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace; }

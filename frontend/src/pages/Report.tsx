@@ -49,13 +49,13 @@ export default function Report() {
 
       {/* Main tab bar */}
       <div className="sticky top-[57px] z-40" style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-screen-2xl mx-auto px-6 flex overflow-x-auto">
+        <div className="w-[80%] max-w-[1600px] mx-auto px-6 flex overflow-x-auto">
           {tabs.map(({ id, label, available }) => (
             <button
               key={id}
               onClick={() => available && setActiveTab(id)}
               disabled={!available}
-              className="px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150"
+              className="px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150 cursor-pointer"
               style={
                 effectiveTab === id
                   ? { borderBottomColor: 'var(--accent)', color: 'var(--accent)' }
@@ -63,6 +63,14 @@ export default function Report() {
                   ? { borderBottomColor: 'transparent', color: 'var(--text-secondary)' }
                   : { borderBottomColor: 'transparent', color: 'var(--text-dim)', cursor: 'not-allowed' }
               }
+              onMouseEnter={e => {
+                if (available && effectiveTab !== id)
+                  (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={e => {
+                if (available && effectiveTab !== id)
+                  (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
+              }}
             >
               {label}
             </button>
@@ -71,7 +79,7 @@ export default function Report() {
       </div>
 
       {/* Tab content */}
-      <main className="flex-1 max-w-screen-2xl mx-auto w-full px-6 py-6">
+      <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
         {effectiveTab === 'sysconfig' && data.sysconfig && (
           <SysConfigTab data={data.sysconfig} />
         )}

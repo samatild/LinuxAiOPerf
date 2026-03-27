@@ -51,7 +51,7 @@ export default function Header({ metadata, showBack }: Props) {
         backdropFilter: 'blur(12px)',
       }}
     >
-      <div className="max-w-screen-2xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+      <div className="w-[80%] max-w-[1600px] mx-auto flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Linux AIO" className="h-9 w-auto" />

@@ -99,6 +99,16 @@ button:disabled { cursor: not-allowed; }
   color: var(--status-warning);
 }
 
+.kofi-widget {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.kofi-widget--compact {
+  padding: 0;
+}
+
 /* ── Upload page ─────────────────────────────────────────────────── */
 .upload-shell {
   --bg-base: #1f1f1f;

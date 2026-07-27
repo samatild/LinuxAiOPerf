@@ -7,6 +7,7 @@ import UploadBox from '../components/upload/UploadBox';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Spinner from '../components/ui/Spinner';
+import KofiButton from '../components/ui/KofiButton';
 import { GITHUB_URL } from '../version';
 
 const QUICK_START_COMMAND = `curl -fsSLO https://raw.githubusercontent.com/samatild/LinuxAiOPerf/main/build/linux_aio_perfcheck.sh
@@ -130,6 +131,8 @@ export default function Upload() {
               </div>
             ))}
           </div>
+
+          <KofiButton />
         </div>
       </main>
       <Footer />

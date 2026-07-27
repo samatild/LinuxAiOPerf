@@ -60,8 +60,9 @@ def inject_script_version(version):
 
 
 def inject_webapp_version(version):
-    """Inject version into webapp components."""
-    webapp_path = Path(__file__).parent.parent / "webapp"
+    """Inject version into webapp and frontend components."""
+    project_root = Path(__file__).parent.parent
+    webapp_path = project_root / "webapp"
 
     # Files to update with their specific patterns
     files_patterns = [
@@ -117,6 +118,25 @@ def inject_webapp_version(version):
 
         print(f"✓ Updated {file_path} version to {version}")
 
+    frontend_version_path = project_root / "frontend" / "src" / "version.ts"
+    if not frontend_version_path.exists():
+        print(f"Warning: File not found at {frontend_version_path}")
+        return
+
+    with open(frontend_version_path, 'r') as f:
+        content = f.read()
+
+    content = re.sub(
+        r"export const APP_VERSION = '(?:VERSION_PLACEHOLDER|\d+\.\d+\.\d+)';",
+        f"export const APP_VERSION = '{version}';",
+        content,
+    )
+
+    with open(frontend_version_path, 'w') as f:
+        f.write(content)
+
+    print(f"✓ Updated frontend/src/version.ts to {version}")
+
 
 def check_versions(version):
     """Check if all components have the correct version."""
@@ -167,6 +187,20 @@ def check_versions(version):
             all_correct = False
         else:
             print(f"✓ {file_path} version correct: {version}")
+
+    frontend_version_path = Path(__file__).parent.parent / "frontend" / "src" / "version.ts"
+    if not frontend_version_path.exists():
+        print(f"❌ File not found at {frontend_version_path}")
+        all_correct = False
+    else:
+        with open(frontend_version_path, 'r') as f:
+            content = f.read()
+
+        if f"export const APP_VERSION = '{version}';" not in content:
+            print(f"❌ Frontend version mismatch. Expected: {version}")
+            all_correct = False
+        else:
+            print(f"✓ frontend/src/version.ts version correct: {version}")
 
     print("=" * 50)
     return all_correct

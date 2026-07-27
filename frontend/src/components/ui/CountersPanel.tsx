@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BookOpen, X } from 'lucide-react';
 import countersText from '../../assets/counters.txt?raw';
 
@@ -7,11 +8,11 @@ export default function CountersPanel() {
 
   return (
     <>
-      {/* Floating button — always visible */}
       <button
         onClick={() => setOpen(o => !o)}
         title="Counters Reference"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium shadow-lg transition-all duration-200"
+        aria-label="Counters Reference"
+        className="flex items-center gap-2 px-3 h-8 rounded-md text-sm transition-colors"
         style={
           open
             ? { background: 'var(--accent)', color: 'var(--accent-fg)' }
@@ -26,15 +27,12 @@ export default function CountersPanel() {
         <span>Counters</span>
       </button>
 
-      {/* Sliding panel */}
-      <div
-        className={`fixed top-0 right-0 h-full z-40 shadow-2xl transition-all duration-300 flex flex-col ${
-          open ? 'w-[480px]' : 'w-0 overflow-hidden'
-        }`}
-        style={{ background: 'var(--bg-base)', borderLeft: '1px solid var(--border)' }}
-      >
-        {open && (
-          <>
+      {open && createPortal(
+        <>
+          <div
+            className="fixed top-0 right-0 h-full w-[480px] z-[60] shadow-2xl flex flex-col"
+            style={{ background: 'var(--bg-base)', borderLeft: '1px solid var(--border)' }}
+          >
             <div
               className="flex items-center justify-between px-5 py-4 shrink-0"
               style={{ borderBottom: '1px solid var(--border)' }}
@@ -54,16 +52,13 @@ export default function CountersPanel() {
             <pre className="mono flex-1 overflow-y-auto px-5 py-4 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-secondary)' }}>
               {countersText}
             </pre>
-          </>
-        )}
-      </div>
-
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        />
+          </div>
+          <div
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+        </>,
+        document.body,
       )}
     </>
   );

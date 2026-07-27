@@ -4,7 +4,6 @@ import type { ReportData } from '../types/report';
 import { getReportData } from '../store/reportStore';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import CountersPanel from '../components/ui/CountersPanel';
 import SysConfigTab from '../components/report/sysconfig/SysConfigTab';
 import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
@@ -45,8 +44,7 @@ export default function Report() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
-      <Header metadata={data.metadata} showBack />
-      <CountersPanel />
+      <Header metadata={data.metadata} showBack showCounters />
 
       {/* Main tab bar */}
       <div className="sticky top-[57px] z-40" style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>

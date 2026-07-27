@@ -14,12 +14,12 @@ function getCSSVar(name: string): string {
 function buildLayout(figure: PlotlyFigure): Plotly.Layout {
   const isDark = (document.documentElement.getAttribute('data-theme') ?? 'dark') !== 'light';
 
-  const chartBg    = getCSSVar('--chart-bg')      || (isDark ? '#1a1d2e' : '#ffffff');
-  const border     = getCSSVar('--border')         || (isDark ? '#2d3149' : '#cdc5e8');
-  const textColor  = getCSSVar('--text-primary')   || (isDark ? '#f0eeff' : '#111827');
-  const accent     = getCSSVar('--accent')         || '#863bff';
-  const bgMuted    = getCSSVar('--bg-muted')       || (isDark ? '#1e2235' : '#e8e2f8');
-  const bgSurface  = getCSSVar('--bg-surface')     || (isDark ? '#13162b' : '#ffffff');
+  const chartBg    = getCSSVar('--chart-bg')      || (isDark ? '#1f1f1f' : '#fafafa');
+  const border     = getCSSVar('--border')         || (isDark ? '#444444' : '#d3d3d4');
+  const textColor  = getCSSVar('--text-primary')   || (isDark ? '#f5f5f5' : '#383a42');
+  const accent     = getCSSVar('--accent')         || '#79b8ff';
+  const bgMuted    = getCSSVar('--bg-muted')       || (isDark ? '#333333' : '#e5e5e6');
+  const bgSurface  = getCSSVar('--bg-surface')     || (isDark ? '#242424' : '#ffffff');
 
   const fl      = (figure.layout ?? {}) as Record<string, unknown>;
   const fxaxis  = (fl.xaxis  ?? {}) as Record<string, unknown>;

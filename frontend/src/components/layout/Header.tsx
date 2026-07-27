@@ -3,10 +3,13 @@ import { Sun, Moon, Monitor, Server, Cpu, Calendar } from 'lucide-react';
 import type { ReportMetadata } from '../../types/report';
 import { useTheme } from '../../hooks/useTheme';
 import logo from '../../assets/logo.png';
+import CountersPanel from '../ui/CountersPanel';
+import KofiButton from '../ui/KofiButton';
 
 interface Props {
   metadata?: ReportMetadata;
   showBack?: boolean;
+  showCounters?: boolean;
 }
 
 function Chip({ icon, text }: { icon: React.ReactNode; text: string }) {
@@ -42,7 +45,7 @@ function ThemeToggle() {
   );
 }
 
-export default function Header({ metadata, showBack }: Props) {
+export default function Header({ metadata, showBack, showCounters }: Props) {
   return (
     <header
       className="sticky top-0 z-50 px-6 py-3"
@@ -82,6 +85,10 @@ export default function Header({ metadata, showBack }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {showCounters && <CountersPanel />}
+          {showBack && (
+            <KofiButton compact />
+          )}
           <ThemeToggle />
           {showBack && (
             <Link

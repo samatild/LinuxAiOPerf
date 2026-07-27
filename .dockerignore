@@ -75,3 +75,7 @@ backup_old_architecture/
 .env.development
 .env.test
 .env.production
+
+# Frontend build artifacts and local dependencies
+frontend/node_modules/
+frontend/dist/

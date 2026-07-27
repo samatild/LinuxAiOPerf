@@ -201,33 +201,50 @@ function packageValidation(){
         echo -e "  \e[1;31m✗\e[0m iotop"
     fi
     
-    # Prompt the user for installation
-    if ! $sysstat_installed || ! $iotop_installed; then
+    if ! $sysstat_installed; then
         echo ""
-        read -rp "$(echo -e "\e[1;33m[WARNING]\e[0m Missing dependencies. Install now? \e[0;36m(y/n)\e[0m: ")" choice
+        read -rp "$(echo -e "\e[1;33m[WARNING]\e[0m sysstat is required. Install now? \e[0;36m(y/n)\e[0m: ")" choice
         if [[ $choice == [Yy] ]]; then
             echo ""
-            if ! $sysstat_installed; then
-                # Install the sysstat package
-                echo -e "\e[1;36m→\e[0m Installing sysstat..."
-                install_package "$package_manager" "$sysstat_package_name"
-                echo -e "  \e[1;32m[OK]\e[0m sysstat installed"
-            fi
-            
-            if ! $iotop_installed; then
-                # Install the iotop package
-                echo -e "\e[1;36m→\e[0m Installing iotop..."
-                install_package "$package_manager" "$iotop_package_name"
-                echo -e "  \e[1;32m[OK]\e[0m iotop installed"
-            fi
+            echo -e "\e[1;36m→\e[0m Installing sysstat..."
+            install_package "$package_manager" "$sysstat_package_name"
+            sysstat_installed=true
+            echo -e "  \e[1;32m[OK]\e[0m sysstat installed"
         else
             echo ""
-            echo -e "\e[1;31m[ERROR]\e[0m Required packages not installed. Exiting."
+            echo -e "\e[1;31m[ERROR]\e[0m sysstat is required. Exiting."
             exit 0
         fi
-    else
+    fi
+
+    if ! $iotop_installed; then
+        echo ""
+        read -rp "$(echo -e "\e[1;33m[WARNING]\e[0m iotop is optional. Install now? \e[0;36m(y/skip)\e[0m: ")" choice
+        case "$choice" in
+            [Yy])
+                echo ""
+                echo -e "\e[1;36m→\e[0m Installing iotop..."
+                install_package "$package_manager" "$iotop_package_name"
+                iotop_installed=true
+                echo -e "  \e[1;32m[OK]\e[0m iotop installed"
+                ;;
+            [Ss]|[Ss][Kk][Ii][Pp])
+                echo -e "  \e[1;33m[SKIP]\e[0m iotop process I/O capture"
+                ;;
+            *)
+                echo ""
+                echo -e "\e[1;31m[ERROR]\e[0m Invalid choice. Exiting."
+                exit 0
+                ;;
+        esac
+    fi
+
+    if $sysstat_installed && $iotop_installed; then
         echo ""
         echo -e "\e[1;32m[OK]\e[0m All dependencies installed"
+    else
+        echo ""
+        echo -e "\e[1;32m[OK]\e[0m Required dependencies installed"
     fi
     displayMenu
 }
@@ -416,7 +433,11 @@ function dataCapture() {
     elapsed_seconds=1
     iostat -xk 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/iostat-data.out" &
     vmstat -a 1 | awk '// {print strftime("%Y-%m-%d-%H:%M:%S"),$0}' >> "$outputdir/vmstat-data.out" &
-    iotop -obtd 1 >> "$outputdir/iotop.txt" &
+    if command -v iotop &> /dev/null; then
+        iotop -obtd 1 >> "$outputdir/iotop.txt" &
+    else
+        echo -e "  \e[1;33m[SKIP]\e[0m iotop process I/O capture (iotop not installed)"
+    fi
 
     # mpstat, pidstat, and sar should be executed on a subshell
     (
@@ -458,7 +479,9 @@ function dataCapture() {
     pkill mpstat
     pkill pidstat
     pkill sar
-    pkill iotop
+    if command -v iotop &> /dev/null; then
+        pkill iotop
+    fi
 
     # Log End Time
     echo "End Time:         $(date)" >> $outputdir/info.txt
@@ -1053,8 +1076,7 @@ function validateNonInteractive() {
     if check_pkg "$iotop_package_name"; then
         echo -e "  \e[1;32m✓\e[0m iotop"
     else
-        echo -e "  \e[1;31m✗\e[0m iotop"
-        missing_packages+=("$iotop_package_name")
+        echo -e "  \e[1;33m!\e[0m iotop (optional; process I/O capture will be skipped)"
     fi
     
     # If packages are missing, exit with error

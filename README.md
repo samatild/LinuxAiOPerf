@@ -1,5 +1,7 @@
 # Linux AIO Performance Collector
 
+**This is the legacy branch.**
+
 [![Latest Release](https://img.shields.io/badge/release-v2.1.2-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![Docker](https://img.shields.io/badge/docker-available-blue.svg)](https://hub.docker.com/r/samuelmatildes/linuxaioperf)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)

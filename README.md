@@ -2,6 +2,7 @@
 
 [![Latest Release](https://img.shields.io/badge/release-v2.3.0-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+<a href="https://ko-fi.com/L8S723YI44" target="_blank" rel="noopener noreferrer"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" height="20" alt="Like the tool? Buy me a Coffee" /></a>
 
 <p>
   <img src="assets/linuxaiologo.png" width="400" alt="Linux AIO Performance" />
@@ -129,14 +130,6 @@ Options:
 ## Documentation
 
 For detailed collector and deployment documentation, see the [project wiki](https://github.com/samatild/LinuxAiOPerf/wiki).
-
-## Support the project
-
-If Linux AIO Performance has been useful, you can help support its maintenance and future improvements:
-
-<a href="https://ko-fi.com/L8S723YI44" target="_blank" rel="noopener noreferrer">
-  <img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" height="36" alt="Like the tool? Buy me a Coffee" />
-</a>
 
 ## License
 

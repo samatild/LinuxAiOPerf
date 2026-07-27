@@ -1,4 +1,4 @@
-name: Legacy Flask: Azure Deploy
+name: "Legacy Flask: Azure Deploy"
 
 on:
   push:

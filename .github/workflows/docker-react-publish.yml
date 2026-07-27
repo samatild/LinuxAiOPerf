@@ -3,7 +3,7 @@ name: Docker Build & Push (React)
 on:
   push:
     branches:
-      - react-prod
+      - main
 
 jobs:
   build-and-push:

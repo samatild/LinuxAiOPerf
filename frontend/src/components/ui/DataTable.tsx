@@ -48,8 +48,8 @@ export default function DataTable({ data }: Props) {
     if (!t) return '';
     const n = parseFloat(String(value));
     if (isNaN(n)) return '';
-    if (n >= t.crit) return 'bg-red-900/50 text-red-200';
-    if (n >= t.warn) return 'bg-yellow-900/50 text-yellow-200';
+    if (n >= t.crit) return 'threshold-critical';
+    if (n >= t.warn) return 'threshold-warning';
     return '';
   }
 

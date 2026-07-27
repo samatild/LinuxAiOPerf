@@ -1,0 +1,4 @@
+pandas
+plotly
+graphviz
+setuptools>=78.1.1

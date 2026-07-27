@@ -1,0 +1,359 @@
+=======================================================
+                        CPU
+=======================================================
+
+ %usr   Show the percentage of CPU utilization that
+		occurred while executing at the user level
+		(application).
+
+%nice  	Show the percentage of CPU utilization that
+		occurred while executing at the user level with
+		nice priority.
+
+%sys	Show the percentage of CPU utilization that
+		occurred while executing at the system level
+		(kernel). Note that this does not include time
+		spent servicing hardware and software interrupts.
+
+%iowait
+		Show the percentage of time that the CPU or CPUs
+		were idle during which the system had an
+		outstanding disk I/O request.
+
+%irq  	Show the percentage of time spent by the CPU or
+		CPUs to service hardware interrupts.
+
+%soft 	Show the percentage of time spent by the CPU or
+		CPUs to service software interrupts.
+
+%steal	Show the percentage of time spent in involuntary
+		wait by the virtual CPU or CPUs while the
+		hypervisor was servicing another virtual processor.
+
+%guest 	Show the percentage of time spent by the CPU or
+		CPUs to run a virtual processor.
+
+%gnice 	Show the percentage of time spent by the CPU or
+		CPUs to run a niced guest.
+
+%idle  	Show the percentage of time that the CPU or CPUs
+		were idle and the system did not have an
+		outstanding disk I/O request.
+
+
+=======================================================
+                      Memory
+=======================================================
+
+swpd: the amount of swap memory used.
+free: the amount of idle memory.
+buff: the amount of memory used as buffers.
+cache: the amount of memory used as cache.
+inact: the amount of inactive memory.
+active: the amount of active memory. 
+
+=======================================================
+                         Disk
+=======================================================
+
+tps    Indicate the number of transfers per second that
+	 were issued to the device. A transfer is an I/O
+	 request to the device. Multiple logical requests
+	 can be combined into a single I/O request to the
+	 device. A transfer is of indeterminate size.
+
+Blk_read/s (kB_read/s, MB_read/s)
+	 Indicate the amount of data read from the device
+	 expressed in a number of blocks (kilobytes,
+	 megabytes) per second. Blocks are equivalent to
+	 sectors and therefore have a size of 512 bytes.
+
+Blk_wrtn/s (kB_wrtn/s, MB_wrtn/s)
+	 Indicate the amount of data written to the device
+	 expressed in a number of blocks (kilobytes,
+	 megabytes) per second.
+
+Blk_dscd/s (kB_dscd/s, MB_dscd/s)
+	 Indicate the amount of data discarded for the
+	 device expressed in a number of blocks (kilobytes,
+	 megabytes) per second.
+
+Blk_w+d/s (kB_w+d/s, MB_w+d/s)
+	 Indicate the amount of data written to or discarded
+	 for the device expressed in a number of blocks
+	 (kilobytes, megabytes) per second.
+
+Blk_read (kB_read, MB_read)
+	 The total number of blocks (kilobytes, megabytes)
+	 read.
+
+Blk_wrtn (kB_wrtn, MB_wrtn)
+	 The total number of blocks (kilobytes, megabytes)
+	 written.
+
+Blk_dscd (kB_dscd, MB_dscd)
+	 The total number of blocks (kilobytes, megabytes)
+	 discarded.
+
+Blk_w+d (kB_w+d, MB_w+d)
+	 The total number of blocks (kilobytes, megabytes)
+	 written or discarded.
+
+r/s    The number (after merges) of read requests
+	 completed per second for the device.
+
+w/s    The number (after merges) of write requests
+	 completed per second for the device.
+
+d/s    The number (after merges) of discard requests
+	 completed per second for the device.
+
+f/s    The number (after merges) of flush requests
+	 completed per second for the device.  This counts
+	 flush requests executed by disks. Flush requests
+	 are not tracked for partitions.  Before being
+	 merged, flush operations are counted as writes.
+
+sec/s (kB/s, MB/s)
+	 The number of sectors (kilobytes, megabytes) read
+	 from, written to or discarded for the device per
+	 second.
+
+rsec/s (rkB/s, rMB/s)
+	 The number of sectors (kilobytes, megabytes) read
+	 from the device per second.
+
+wsec/s (wkB/s, wMB/s)
+	 The number of sectors (kilobytes, megabytes)
+	 written to the device per second.
+
+dsec/s (dkB/s, dMB/s)
+	 The number of sectors (kilobytes, megabytes)
+	 discarded for the device per second.
+
+rqm/s  The number of I/O requests merged per second that
+	 were queued to the device.
+
+rrqm/s The number of read requests merged per second that
+	 were queued to the device.
+
+wrqm/s The number of write requests merged per second that
+	 were queued to the device.
+
+drqm/s The number of discard requests merged per second
+	 that were queued to the device.
+
+%rrqm  The percentage of read requests merged together
+	 before being sent to the device.
+
+%wrqm  The percentage of write requests merged together
+	 before being sent to the device.
+
+%drqm  The percentage of discard requests merged together
+	 before being sent to the device.
+
+areq-sz
+	 The average size (in kilobytes) of the I/O requests
+	 that were issued to the device.
+	 Note: In previous versions, this field was known as
+	 avgrq-sz and was expressed in sectors.
+
+rareq-sz
+	 The average size (in kilobytes) of the read
+	 requests that were issued to the device.
+
+wareq-sz
+	 The average size (in kilobytes) of the write
+	 requests that were issued to the device.
+
+dareq-sz
+	 The average size (in kilobytes) of the discard
+	 requests that were issued to the device.
+
+await  The average time (in milliseconds) for I/O requests
+	 issued to the device to be served. This includes
+	 the time spent by the requests in queue and the
+	 time spent servicing them.
+
+r_await
+	 The average time (in milliseconds) for read
+	 requests issued to the device to be served. This
+	 includes the time spent by the requests in queue
+	 and the time spent servicing them.
+
+w_await
+	 The average time (in milliseconds) for write
+	 requests issued to the device to be served. This
+	 includes the time spent by the requests in queue
+	 and the time spent servicing them.
+
+d_await
+	 The average time (in milliseconds) for discard
+	 requests issued to the device to be served. This
+	 includes the time spent by the requests in queue
+	 and the time spent servicing them.
+
+f_await
+	 The average time (in milliseconds) for flush
+	 requests issued to the device to be served.  The
+	 block layer combines flush requests and executes at
+	 most one at a time.  Thus flush operations could be
+	 twice as long: Wait for current flush request, then
+	 execute it, then wait for the next one.
+
+aqu-sz The average queue length of the requests that were
+	 issued to the device.
+	 Note: In previous versions, this field was known as
+	 avgqu-sz.
+
+%util  Percentage of elapsed time during which I/O
+	 requests were issued to the device (bandwidth
+	 utilization for the device). Device saturation
+	 occurs when this value is close to 100% for devices
+	 serving requests serially.  But for devices serving
+	 requests in parallel, such as RAID arrays and
+	 modern SSDs, this number does not reflect their
+	 performance limits.
+
+
+=======================================================
+                      Network
+=======================================================
+
+rxpck/s
+        Total number of packets received per second.
+
+txpck/s
+        Total number of packets transmitted per second.
+
+rxkB/s Total number of kilobytes received per second.
+
+txkB/s Total number of kilobytes transmitted per second.
+
+rxcmp/s
+        Number of compressed packets received per second
+        (for cslip etc.).
+
+txcmp/s
+        Number of compressed packets transmitted per
+        second.
+
+rxmcst/s
+        Number of multicast packets received per second.
+
+%ifutil
+        Utilization percentage of the network interface.
+        For half-duplex interfaces, utilization is
+        calculated using the sum of rxkB/s and txkB/s as a
+        percentage of the interface speed. For full-duplex,
+        this is the greater of rxkB/S or txkB/s.
+
+=======================================================
+                	PIDSTAT CPU
+=======================================================
+
+UID    The real user identification number of the task
+		being monitored.
+
+USER   The name of the real user owning the task being
+		monitored.
+
+PID    The identification number of the task being
+		monitored.
+
+%usr   Percentage of CPU used by the task while executing
+		at the user level (application), with or without
+		nice priority. Note that this field does NOT
+		include time spent running a virtual processor.
+
+%system
+		Percentage of CPU used by the task while executing
+		at the system level (kernel).
+
+%guest Percentage of CPU spent by the task in virtual
+		machine (running a virtual processor).
+
+%wait  Percentage of CPU spent by the task while waiting
+		to run.
+
+%CPU   Total percentage of CPU time used by the task. In
+		an SMP environment, the task's CPU usage will be
+		divided by the total number of CPU's if option -I
+		has been entered on the command line.
+
+CPU    Processor number to which the task is attached.
+
+Command
+		The command name of the task.
+
+=======================================================
+                	PIDSTAT IO
+=======================================================
+
+UID    The real user identification number of the task
+		being monitored.
+
+USER   The name of the real user owning the task being
+		monitored.
+
+PID    The identification number of the task being
+		monitored.
+
+kB_rd/s
+		Number of kilobytes the task has caused to be read
+		from disk per second.
+
+kB_wr/s
+		Number of kilobytes the task has caused, or shall
+		cause to be written to disk per second.
+
+kB_ccwr/s
+		Number of kilobytes whose writing to disk has been
+		cancelled by the task. This may occur when the task
+		truncates some dirty pagecache. In this case, some
+		IO which another task has been accounted for will
+		not be happening.
+
+iodelay
+		Block I/O delay of the task being monitored,
+		measured in clock ticks. This metric includes the
+		delays spent waiting for sync block I/O completion
+		and for swapin block I/O completion.
+
+Command
+		The command name of the task.
+
+=======================================================
+                PIDSTAT MEMORY
+=======================================================
+
+UID    The real user identification number of the task
+		being monitored.
+
+USER   The name of the real user owning the task being
+		monitored.
+
+PID    The identification number of the task being
+		monitored.
+
+minflt/s
+		Total number of minor faults the task has made per
+		second, those which have not required loading a
+		memory page from disk.
+
+majflt/s
+		Total number of major faults the task has made per
+		second, those which have required loading a memory
+		page from disk.
+
+VSZ    Virtual Size: The virtual memory usage of entire
+		task in kilobytes.
+
+RSS    Resident Set Size: The non-swapped physical memory
+		used by the task in kilobytes.
+
+%MEM   The tasks's currently used share of available
+		physical memory.
+
+Command
+		The command name of the task.

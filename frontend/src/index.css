@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────────────── */
+:root {
+  /* Dark theme — matches linuxaio.matildes.dev */
+  --bg-base:     #0d1117;
+  --bg-surface:  #161b22;
+  --bg-elevated: #1c2128;
+  --bg-muted:    #21262d;
+  --bg-hover:    #30363d;
+
+  --border:        #30363d;
+  --border-subtle: #21262d;
+
+  --accent:           #3fb950;
+  --accent-hover:     #46c35f;
+  --accent-active:    #2ea043;
+  --accent-fg:        #000000;
+  --accent-subtle:    rgba(63, 185, 80, 0.1);
+  --accent-blue:      #58a6ff;
+  --accent-purple:    #a371f7;
+  --accent-secondary: #58a6ff;
+
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #6e7681;
+  --text-dim:       #484f58;
+
+  --status-success: #3fb950;
+  --status-warning: #d29922;
+  --status-error:   #f85149;
+
+  --chart-bg: #161b22;
+}
+
+:root[data-theme="light"] {
+  --bg-base:     #ffffff;
+  --bg-surface:  #f6f8fa;
+  --bg-elevated: #eaeef2;
+  --bg-muted:    #d0d7de;
+  --bg-hover:    #c6cdd5;
+
+  --border:        #d0d7de;
+  --border-subtle: #eaeef2;
+
+  --accent:           #1a7f37;
+  --accent-hover:     #2ea043;
+  --accent-active:    #116329;
+  --accent-fg:        #ffffff;
+  --accent-subtle:    rgba(26, 127, 55, 0.1);
+  --accent-blue:      #0969da;
+  --accent-purple:    #8250df;
+  --accent-secondary: #0969da;
+
+  --text-primary:   #1f2328;
+  --text-secondary: #656d76;
+  --text-muted:     #9198a1;
+  --text-dim:       #d0d7de;
+
+  --status-success: #1a7f37;
+  --status-warning: #9a6700;
+  --status-error:   #d1242f;
+
+  --chart-bg: #ffffff;
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Cursor ──────────────────────────────────────────────────────── */
+button:not(:disabled), a, [role="button"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* ── Utility ─────────────────────────────────────────────────────── */
+.mono { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace; }

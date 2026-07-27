@@ -1,11 +1,9 @@
-name: Docker Build, Push, and Azure Deploy
+name: Legacy Flask: Docker Build, Push, and Azure Deploy
 
 on:
-  pull_request:
+  push:
     branches:
-      - main  
-    types:
-      - closed  
+      - legacy-main
 
 jobs:
   lint:

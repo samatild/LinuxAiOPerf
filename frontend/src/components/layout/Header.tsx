@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sun, Moon, Monitor, Server, Cpu, Calendar } from 'lucide-react';
+import { Sun, Moon, Monitor } from 'lucide-react';
 import type { ReportMetadata } from '../../types/report';
 import { useTheme } from '../../hooks/useTheme';
 import logo from '../../assets/logo.png';
@@ -12,18 +12,33 @@ interface Props {
   showCounters?: boolean;
 }
 
-function Chip({ icon, text }: { icon: React.ReactNode; text: string }) {
+function SystemIdentity({ metadata }: { metadata: ReportMetadata }) {
+  const identity = [metadata.hostname, metadata.os].filter(
+    (value): value is string => Boolean(value),
+  );
+
+  if (identity.length === 0) return null;
+
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
-      style={{
-        background: 'var(--bg-muted)',
-        border: '1px solid var(--border)',
-        color: 'var(--text-secondary)',
-      }}
+    <div
+      className="flex items-center gap-2 ml-4 pl-4 text-xs min-w-0"
+      style={{ borderLeft: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+      aria-label="Report system"
     >
-      {icon} {text}
-    </span>
+      <Monitor size={14} className="shrink-0" aria-hidden="true" />
+      <span className="truncate">
+        {identity.map((value, index) => (
+          <span key={value}>
+            {index > 0 && (
+              <span className="mx-2" style={{ color: 'var(--text-dim)' }} aria-hidden="true">
+                ·
+              </span>
+            )}
+            {value}
+          </span>
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -75,14 +90,7 @@ export default function Header({ metadata, showBack, showCounters }: Props) {
               </p>
             </div>
           </div>
-          {metadata && (
-            <div className="flex flex-wrap gap-2 ml-4">
-              {metadata.hostname && <Chip icon={<Monitor size={11} />} text={metadata.hostname} />}
-              {metadata.os && <Chip icon={<Server size={11} />} text={metadata.os} />}
-              {metadata.kernel && <Chip icon={<Cpu size={11} />} text={metadata.kernel} />}
-              {metadata.collection_date && <Chip icon={<Calendar size={11} />} text={metadata.collection_date} />}
-            </div>
-          )}
+          {metadata && <SystemIdentity metadata={metadata} />}
         </div>
         <div className="flex items-center gap-2">
           {showCounters && <CountersPanel />}

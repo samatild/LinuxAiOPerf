@@ -1,7 +1,8 @@
 # Linux AIO Performance
 
-[![Latest Release](https://img.shields.io/badge/release-v2.3.0-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
+[![Latest Release](https://img.shields.io/badge/release-v2.3.2-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+[![Live App](https://img.shields.io/badge/app-linuxaioperf.matildes.dev-brightgreen.svg)](https://linuxaioperf.matildes.dev/)
 <a href="https://ko-fi.com/L8S723YI44" target="_blank" rel="noopener noreferrer"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" height="20" alt="Like the tool? Buy me a Coffee" /></a>
 
 <p>
@@ -10,7 +11,7 @@
 
 Linux AIO Performance helps investigate Linux performance problems. Run one collector script on the affected host, upload the generated archive, and explore an interactive report covering CPU, memory, disk, network, processes, and system configuration.
 
-**[Open the hosted analyser](https://linuxaioperf.matildes.dev)** · **[Download a release](https://github.com/samatild/LinuxAiOPerf/releases/latest)**
+**[Open the hosted analyser](https://linuxaioperf.matildes.dev)** · **[Run it locally](https://github.com/samatild/LinuxAiOPerf/blob/debug/network-processor-hang/README.md#run-locally)** · **[Download a release](https://github.com/samatild/LinuxAiOPerf/releases/latest)**
 
 ## How it works
 

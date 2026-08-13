@@ -1,22 +1,62 @@
-import { useState, useMemo } from 'react';
-import type { TimestampChunks } from '../../types/report';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import type { TimestampChunksMeta, ChunkResponse } from '../../types/report';
 
 interface Props {
-  data: TimestampChunks;
+  reportId: string;
+  section: string;
+  meta: TimestampChunksMeta;
 }
 
 type SortDir = 'asc' | 'desc';
 
-export default function DataTable({ data }: Props) {
-  const { timestamps, chunks, thresholds } = data;
+export default function DataTable({ reportId, section, meta }: Props) {
+  const { timestamps, header: headers, thresholds } = meta;
   const [selectedTs, setSelectedTs] = useState<string>(timestamps[0] ?? '');
   const [search, setSearch] = useState('');
   const [topN, setTopN] = useState<number | 'all'>(25);
   const [sortCol, setSortCol] = useState<number | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  const snapshot = chunks[selectedTs];
-  const headers = snapshot?.headers ?? [];
+  // Cache fetched snapshots per timestamp so re-picking one already seen is instant.
+  const cacheRef = useRef<Record<string, ChunkResponse>>({});
+  const [, forceRender] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    cacheRef.current = {};
+    setSelectedTs(timestamps[0] ?? '');
+  }, [reportId, section, timestamps]);
+
+  useEffect(() => {
+    if (!selectedTs || cacheRef.current[selectedTs]) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const url = `/api/chunk?report_id=${encodeURIComponent(reportId)}&section=${encodeURIComponent(section)}&ts=${encodeURIComponent(selectedTs)}`;
+    fetch(url)
+      .then(async res => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Request failed (${res.status})`);
+        }
+        return res.json() as Promise<ChunkResponse>;
+      })
+      .then(chunk => {
+        if (cancelled) return;
+        cacheRef.current[selectedTs] = chunk;
+        forceRender(n => n + 1);
+      })
+      .catch(err => {
+        if (!cancelled) setError(String(err.message || err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [reportId, section, selectedTs]);
+
+  const snapshot = cacheRef.current[selectedTs];
   const cmdIdx = headers.findIndex(h => /command|cmd/i.test(h));
 
   const filteredRows = useMemo(() => {
@@ -144,7 +184,7 @@ export default function DataTable({ data }: Props) {
               {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={headers.length} className="px-3 py-8 text-center" style={{ color: 'var(--text-muted)' }}>
-                    No data
+                    {loading ? 'Loading snapshot…' : error ? `Error: ${error}` : 'No data'}
                   </td>
                 </tr>
               )}

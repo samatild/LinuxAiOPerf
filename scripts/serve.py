@@ -6,7 +6,7 @@ Usage: python scripts/serve.py
 """
 import sys
 import os
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 ROOT_DIR = os.path.join(os.path.dirname(__file__), '..')
 STATIC_DIR = os.path.join(ROOT_DIR, 'frontend', 'dist')
@@ -19,9 +19,14 @@ class CombinedHandler(api_handler):
     """Routes /api/* to the upload handler, everything else serves static files."""
 
     def do_GET(self):
-        # Serve static frontend files
         path = self.path.split('?')[0]
 
+        # Route API GET requests (e.g. /api/chunk) to the upload handler
+        if path.startswith('/api/'):
+            super().do_GET()
+            return
+
+        # Serve static frontend files
         # Resolve file path
         if path == '/' or not os.path.exists(os.path.join(STATIC_DIR, path.lstrip('/'))):
             # SPA fallback: serve index.html for unknown paths
@@ -70,4 +75,4 @@ class CombinedHandler(api_handler):
 PORT = int(os.environ.get('PORT', 8000))
 print(f'LinuxAIO Performance server running on http://0.0.0.0:{PORT}')
 print(f'Serving static files from: {STATIC_DIR}')
-HTTPServer(('', PORT), CombinedHandler).serve_forever()
+ThreadingHTTPServer(('', PORT), CombinedHandler).serve_forever()

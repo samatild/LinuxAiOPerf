@@ -3,10 +3,15 @@ export interface PlotlyFigure {
   layout: object;
 }
 
-export interface TimestampChunks {
+export interface TimestampChunksMeta {
   timestamps: string[];
-  chunks: Record<string, { headers: string[]; rows: (string | number)[][] }>;
+  header: string[];
   thresholds?: Record<string, { warn: number; crit: number }>;
+}
+
+export interface ChunkResponse {
+  headers: string[];
+  rows: (string | number)[][];
 }
 
 export interface ReportMetadata {
@@ -59,11 +64,11 @@ export interface ProcessActivityData {
 }
 
 export interface ProcessDetailsData {
-  pidstat_cpu?: TimestampChunks;
-  pidstat_io?: TimestampChunks;
-  pidstat_memory?: TimestampChunks;
-  top?: TimestampChunks;
-  iotop?: TimestampChunks;
+  pidstat_cpu?: TimestampChunksMeta;
+  pidstat_io?: TimestampChunksMeta;
+  pidstat_memory?: TimestampChunksMeta;
+  top?: TimestampChunksMeta;
+  iotop?: TimestampChunksMeta;
 }
 
 export interface ReportData {

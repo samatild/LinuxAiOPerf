@@ -3,7 +3,7 @@ import type { ProcessDetailsData } from '../../../types/report';
 import SubTabBar from '../../ui/SubTabBar';
 import DataTable from '../../ui/DataTable';
 
-interface Props { data: ProcessDetailsData; }
+interface Props { data: ProcessDetailsData; reportId: string; }
 
 const SUBTABS = [
   { id: 'pidstat_cpu',    label: 'Process Stats (CPU)' },
@@ -13,7 +13,7 @@ const SUBTABS = [
   { id: 'iotop',          label: 'iotop' },
 ];
 
-export default function ProcessDetailsTab({ data }: Props) {
+export default function ProcessDetailsTab({ data, reportId }: Props) {
   const [sub, setSub] = useState('pidstat_cpu');
 
   const tabs = SUBTABS.map(t => ({
@@ -25,13 +25,13 @@ export default function ProcessDetailsTab({ data }: Props) {
     ? sub
     : (tabs.find(t => t.available)?.id ?? sub);
 
-  const chunkData = data[activeSub as keyof ProcessDetailsData];
+  const meta = data[activeSub as keyof ProcessDetailsData];
 
   return (
     <div>
       <SubTabBar tabs={tabs} active={activeSub} onChange={setSub} />
-      {chunkData
-        ? <DataTable data={chunkData} />
+      {meta
+        ? <DataTable reportId={reportId} section={activeSub} meta={meta} />
         : <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>No data available</p>
       }
     </div>

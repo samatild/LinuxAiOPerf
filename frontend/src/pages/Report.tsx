@@ -89,7 +89,7 @@ export default function Report() {
           <ProcessActivityTab data={data.process_activity} />
         )}
         {effectiveTab === 'process_details' && data.process_details && (
-          <ProcessDetailsTab data={data.process_details} />
+          <ProcessDetailsTab data={data.process_details} reportId={data.report_id} />
         )}
         {effectiveTab === 'about' && <AboutTab />}
       </main>

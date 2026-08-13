@@ -15,6 +15,10 @@ import io
 import shutil
 import re
 import logging
+import gzip
+import threading
+import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 # ── Path setup ──────────────────────────────────────────────────────────────
@@ -27,12 +31,12 @@ from domains.factory import ProcessorFactory
 from domains.procperf.cpu.top_consumers import extract_top_cpu_consumers
 from domains.procperf.io.top_consumers import extract_top_io_consumers
 from domains.procperf.memory.top_consumers import extract_top_mem_consumers
-from domains.procinfo.pidstat.pidstatcpu import generate_pidstat, pidstat_extract_header_line
-from domains.procinfo.pidstat.pidstatio import generate_pidstatio, pidstatio_extract_header_line
-from domains.procinfo.pidstat.pidstatmem import generate_pidstatmem, pidstatmem_extract_header_line
-from domains.procinfo.top.topcmd import generate_top
-from domains.procinfo.iotop.iotopcmd import generate_iotop
+from domains.procinfo.pidstat.pidstatcpu import pidstat_extract_header_line
+from domains.procinfo.pidstat.pidstatio import pidstatio_extract_header_line
+from domains.procinfo.pidstat.pidstatmem import pidstatmem_extract_header_line
 from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs
+
+import lazy_details
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('api.upload')
@@ -310,7 +314,13 @@ def extract_process_activity(work_dir: str) -> dict:
     return activity
 
 
-# ── Process Details (timestamp-chunked snapshots) ─────────────────────────────
+# ── Process Details (timestamp-chunked snapshots, lazily loaded) ────────────
+#
+# Full data for every timestamp is NEVER discarded -- it stays on disk. We
+# only build a byte-offset index here (cheap: no string copies) so the
+# initial /api/upload response stays small (just timestamps + headers), and
+# the frontend fetches one timestamp's full process table on demand via
+# GET /api/chunk when the user picks it in the "Process Details" combobox.
 
 def _parse_chunk_text(header_line: str, chunk_text: str) -> dict:
     """Convert raw pidstat chunk text to {headers, rows}."""
@@ -330,161 +340,138 @@ def _parse_chunk_text(header_line: str, chunk_text: str) -> dict:
     return {'headers': headers, 'rows': rows}
 
 
-def _chunks_to_response(chunks: dict, header: str, thresholds: dict | None = None) -> dict:
-    timestamps = sorted(chunks.keys())
-    parsed_chunks = {ts: _parse_chunk_text(header, text) for ts, text in chunks.items()}
-    result: dict = {'timestamps': timestamps, 'chunks': parsed_chunks}
-    if thresholds:
-        result['thresholds'] = thresholds
-    return result
+def extract_process_details(work_dir: str) -> tuple[dict, dict]:
+    """Returns (details_for_response, sections_for_registry).
 
+    `details_for_response` only carries timestamps + header + thresholds
+    (small, safe to JSON-serialize eagerly). `sections_for_registry` carries
+    everything needed to serve a single timestamp's chunk later: absolute
+    file path, parser kind, byte-offset index and header.
+    """
+    details: dict = {}
+    sections: dict = {}
 
-def extract_process_details(work_dir: str) -> dict:
-    orig = os.getcwd()
-    os.chdir(work_dir)
-    details = {}
+    def register(name, fname, kind, header, index, thresholds=None):
+        if not index:
+            return
+        details[name] = {
+            'timestamps': sorted(index.keys()),
+            'header': header.split(),
+        }
+        if thresholds:
+            details[name]['thresholds'] = thresholds
+        sections[name] = {
+            'path': os.path.join(work_dir, fname),
+            'kind': kind,
+            'header': header,
+            'index': index,
+            'thresholds': thresholds,
+        }
 
     # pidstat CPU
-    if os.path.exists('pidstat.txt'):
+    path = os.path.join(work_dir, 'pidstat.txt')
+    if os.path.exists(path):
         try:
-            header = pidstat_extract_header_line('pidstat.txt')
-            chunks, _, _ = generate_pidstat('pidstat.txt', header)
-            if chunks:
-                details['pidstat_cpu'] = _chunks_to_response(chunks, header, {
-                    '%usr': {'warn': 50, 'crit': 80},
-                    '%system': {'warn': 20, 'crit': 40},
-                    '%wait': {'warn': 10, 'crit': 25},
-                })
+            header = pidstat_extract_header_line(path)
+            index = lazy_details.index_pidstat(path)
+            register('pidstat_cpu', 'pidstat.txt', 'pidstat', header, index, {
+                '%usr': {'warn': 50, 'crit': 80},
+                '%system': {'warn': 20, 'crit': 40},
+                '%wait': {'warn': 10, 'crit': 25},
+            })
         except Exception as e:
             log.warning(f'pidstat CPU details failed: {e}')
 
     # pidstat IO
-    if os.path.exists('pidstat-io.txt'):
+    path = os.path.join(work_dir, 'pidstat-io.txt')
+    if os.path.exists(path):
         try:
-            header = pidstatio_extract_header_line('pidstat-io.txt')
-            chunks, _, _ = generate_pidstatio('pidstat-io.txt', header)
-            if chunks:
-                details['pidstat_io'] = _chunks_to_response(chunks, header)
+            header = pidstatio_extract_header_line(path)
+            index = lazy_details.index_pidstat(path)
+            register('pidstat_io', 'pidstat-io.txt', 'pidstat', header, index)
         except Exception as e:
             log.warning(f'pidstat IO details failed: {e}')
 
     # pidstat Memory
-    if os.path.exists('pidstat-memory.txt'):
+    path = os.path.join(work_dir, 'pidstat-memory.txt')
+    if os.path.exists(path):
         try:
-            header = pidstatmem_extract_header_line('pidstat-memory.txt')
-            chunks, _, _ = generate_pidstatmem('pidstat-memory.txt', header)
-            if chunks:
-                details['pidstat_memory'] = _chunks_to_response(chunks, header, {
-                    '%MEM': {'warn': 20, 'crit': 50},
-                })
+            header = pidstatmem_extract_header_line(path)
+            index = lazy_details.index_pidstat(path)
+            register('pidstat_memory', 'pidstat-memory.txt', 'pidstat', header, index, {
+                '%MEM': {'warn': 20, 'crit': 50},
+            })
         except Exception as e:
             log.warning(f'pidstat Memory details failed: {e}')
 
     # top
-    if os.path.exists('top.txt'):
+    path = os.path.join(work_dir, 'top.txt')
+    if os.path.exists(path):
         try:
-            chunks_js, timestamps = generate_top('top.txt')
-            # generate_top returns a JS object string; re-parse the raw file instead
-            chunks = _parse_top_file('top.txt')
-            if chunks:
-                header = 'Timestamp PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND'
-                details['top'] = _chunks_to_response(chunks, header, {
-                    '%CPU': {'warn': 50, 'crit': 80},
-                    '%MEM': {'warn': 20, 'crit': 50},
-                })
+            index = lazy_details.index_top(path)
+            header = 'Timestamp PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND'
+            register('top', 'top.txt', 'top', header, index, {
+                '%CPU': {'warn': 50, 'crit': 80},
+                '%MEM': {'warn': 20, 'crit': 50},
+            })
         except Exception as e:
             log.warning(f'top details failed: {e}')
 
     # iotop
-    if os.path.exists('iotop.txt'):
+    path = os.path.join(work_dir, 'iotop.txt')
+    if os.path.exists(path):
         try:
-            chunks = _parse_iotop_file('iotop.txt')
-            if chunks:
-                header = 'Timestamp TID PRIO USER DISK_READ DISK_WRITE SWAPIN IO% COMMAND'
-                details['iotop'] = _chunks_to_response(chunks, header)
+            index = lazy_details.index_iotop(path)
+            header = 'Timestamp TID PRIO USER DISK_READ DISK_WRITE SWAPIN IO% COMMAND'
+            register('iotop', 'iotop.txt', 'iotop', header, index)
         except Exception as e:
             log.warning(f'iotop details failed: {e}')
 
-    os.chdir(orig)
-    return details
+    return details, sections
 
 
-def _parse_top_file(path: str) -> dict:
-    chunks: dict[str, str] = {}
-    current_ts = None
-    lines_buf: list[str] = []
-
-    def flush():
-        if current_ts and lines_buf:
-            chunks[current_ts] = '\n'.join(lines_buf)
-
-    with open(path, 'r', errors='replace') as f:
-        for line in f:
-            if 'top - ' in line:
-                flush()
-                parts = line.split()
-                current_ts = parts[2] if len(parts) > 2 else None
-                lines_buf = []
-            elif (line.strip() and current_ts
-                  and not any(line.startswith(p) for p in
-                              ('top', '%', 'Tasks', 'Cpu', 'MiB', 'KiB', 'Mem', 'Swap', 'PID'))):
-                parts = line.strip().split(None, 12)
-                if len(parts) >= 12 and parts[0].isdigit():
-                    lines_buf.append(f"{current_ts} " + ' '.join(parts[:12]))
-    flush()
-    return chunks
+def read_process_detail_chunk(section: dict, timestamp: str) -> dict:
+    """Read + parse a single timestamp's process table on demand (lazy)."""
+    offset, length = section['index'][timestamp]
+    text = lazy_details.read_range(section['path'], offset, length)
+    kind = section['kind']
+    if kind == 'pidstat':
+        return _parse_chunk_text(section['header'], lazy_details.strip_pidstat_noise(text))
+    if kind == 'top':
+        return lazy_details.parse_top_chunk(text)
+    return lazy_details.parse_iotop_chunk(text)
 
 
-def _parse_iotop_file(path: str) -> dict:
-    """Parse iotop.txt into {timestamp: text_block} chunks.
+# ── Lazy report registry ──────────────────────────────────────────────────────
+#
+# Extracted archives are kept on disk (instead of being deleted right after
+# the initial response) so that Process Details timestamps can be fetched
+# on demand via GET /api/chunk. A background sweep removes anything older
+# than REPORT_TTL_SECONDS, mirroring the legacy Flask app's cleanup thread.
 
-    Supports two formats:
-    - New: lines like "12:31:30 Total DISK READ..." mark timestamp boundaries;
-      process rows look like: b'12:31:31    8365 be/4 root  ...'
-    - Legacy: starts with weekday names (Mon/Tue/...), timestamp on prev line.
-    """
-    chunks: dict[str, str] = {}
-    current_ts = None
-    lines_buf: list[str] = []
+REPORT_TTL_SECONDS = 15 * 60
+REPORTS: dict = {}
+_REPORTS_LOCK = threading.Lock()
+_cleanup_started = False
 
-    def flush():
-        if current_ts and lines_buf:
-            chunks[current_ts] = '\n'.join(lines_buf)
 
-    with open(path, 'r', errors='replace') as f:
-        for line in f:
-            s = line.strip()
-            if not s:
-                continue
+def _cleanup_expired_reports():
+    while True:
+        time.sleep(60)
+        cutoff = time.time() - REPORT_TTL_SECONDS
+        with _REPORTS_LOCK:
+            expired = [rid for rid, entry in REPORTS.items() if entry['created'] < cutoff]
+            for rid in expired:
+                entry = REPORTS.pop(rid)
+                shutil.rmtree(entry['work_dir'], ignore_errors=True)
 
-            # "12:31:30 Total DISK READ ..." — timestamp boundary
-            if 'Total DISK READ' in s:
-                flush()
-                current_ts = s.split()[0]  # "12:31:30"
-                lines_buf = []
-                continue
 
-            # Skip "Actual DISK READ" / "Current DISK READ" summary lines and column headers
-            if 'Actual DISK' in s or 'Current DISK' in s or s.startswith('TIME') or s.startswith('TID'):
-                continue
-
-            # Process data rows: b'12:31:31    8365 be/4 root ...'  (RHEL/older iotop)
-            if s.startswith("b'") or s.startswith('b"'):
-                inner = s[2:].rstrip("'\"")
-                parts = inner.split(None, 8)
-                if len(parts) >= 7 and parts[1].isdigit():
-                    row = f"{parts[0]} " + ' '.join(parts[1:])
-                    lines_buf.append(row)
-                continue
-
-            # Plain format: "HH:MM:SS   TID  PRIO  USER ..."  (Ubuntu / newer iotop)
-            if current_ts:
-                parts = s.split(None, 8)
-                if len(parts) >= 7 and parts[1].isdigit() and ':' in parts[0]:
-                    lines_buf.append(f"{parts[0]} " + ' '.join(parts[1:]))
-
-    flush()
-    return chunks
+def _ensure_cleanup_thread():
+    global _cleanup_started
+    if not _cleanup_started:
+        _cleanup_started = True
+        t = threading.Thread(target=_cleanup_expired_reports, daemon=True)
+        t.start()
 
 
 # ── Vercel handler ────────────────────────────────────────────────────────────
@@ -495,23 +482,65 @@ class handler(BaseHTTPRequestHandler):
 
     def _send_json(self, data, status=200):
         body = json.dumps(data).encode('utf-8')
+        headers = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+
+        accepts_gzip = 'gzip' in self.headers.get('Accept-Encoding', '')
+        if accepts_gzip and len(body) > 1024:
+            body = gzip.compress(body)
+            headers['Content-Encoding'] = 'gzip'
+
         self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
+        for k, v in headers.items():
+            self.send_header(k, v)
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Content-Length', '0')
         self.end_headers()
 
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/api/chunk':
+            self._handle_chunk_request(parsed)
+            return
+        self._send_json({'error': 'not found'}, 404)
+
+    def _handle_chunk_request(self, parsed):
+        qs = urllib.parse.parse_qs(parsed.query)
+        report_id = qs.get('report_id', [''])[0]
+        section_name = qs.get('section', [''])[0]
+        timestamp = qs.get('ts', [''])[0]
+
+        with _REPORTS_LOCK:
+            entry = REPORTS.get(report_id)
+
+        if not entry:
+            self._send_json({'error': 'report not found or expired, please re-upload'}, 404)
+            return
+
+        section = entry['sections'].get(section_name)
+        if not section or timestamp not in section['index']:
+            self._send_json({'error': 'timestamp not found'}, 404)
+            return
+
+        try:
+            chunk = read_process_detail_chunk(section, timestamp)
+        except Exception as e:
+            log.warning(f'chunk read failed ({section_name}@{timestamp}): {e}')
+            self._send_json({'error': f'failed to read chunk: {e}'}, 500)
+            return
+
+        self._send_json(chunk)
+
     def do_POST(self):
         work_dir = None
+        register_for_lazy_load = False
         try:
             parts = parse_cgi_multipart(self)
             file_data = parts.get('file')
@@ -560,9 +589,18 @@ class handler(BaseHTTPRequestHandler):
             if activity:
                 report['process_activity'] = activity
 
-            details = extract_process_details(work_dir)
+            details, sections = extract_process_details(work_dir)
             if details:
                 report['process_details'] = details
+            if sections:
+                _ensure_cleanup_thread()
+                with _REPORTS_LOCK:
+                    REPORTS[hex_id] = {
+                        'created': time.time(),
+                        'work_dir': work_dir,
+                        'sections': sections,
+                    }
+                register_for_lazy_load = True
 
             self._send_json(report)
 
@@ -571,5 +609,8 @@ class handler(BaseHTTPRequestHandler):
             log.error(traceback.format_exc())
             self._send_json({'error': f'Processing failed: {e}'}, 500)
         finally:
-            if work_dir and os.path.exists(work_dir):
+            # If Process Details sections were registered, the extracted
+            # archive is kept on disk (owned by REPORTS/_cleanup_expired_reports)
+            # so that GET /api/chunk can serve individual timestamps later.
+            if not register_for_lazy_load and work_dir and os.path.exists(work_dir):
                 shutil.rmtree(work_dir, ignore_errors=True)

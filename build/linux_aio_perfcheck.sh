@@ -3,10 +3,11 @@
 # Linux All-in-one Performance Collector 
 # Description:  shell script which collects performance data for analysis
 # About: https://github.com/samatild/LinuxAiOPerf
-# version: 2.3.0
+# version: 2.3.1
 # Date: 30/May/2025
      
 runmode="null"
+LAST_CAPTURE_ARCHIVE=""
 
 # Declare a global variable for High Resolution Disk metrics
 high_res_disk_metrics="OFF"
@@ -506,7 +507,8 @@ function createReport() {
     echo ""
     echo -e "\e[1;32m[OK]\e[0m Collection complete"
     echo ""
-    echo -e "Output: \e[1;37m$(pwd)/$zip_filename\e[0m"
+    LAST_CAPTURE_ARCHIVE="$(pwd -P)/$zip_filename"
+    echo -e "Output: \e[1;37m$LAST_CAPTURE_ARCHIVE\e[0m"
     echo ""
 }
 
@@ -776,6 +778,29 @@ readWatchdogThreshold() {
     done
 }
 
+readWatchdogYesNo() {
+    local prompt=$1
+
+    while true; do
+        if ! read -rp "$prompt" WATCHDOG_CHOICE_RESULT; then
+            return 1
+        fi
+        case "$WATCHDOG_CHOICE_RESULT" in
+            [Yy]|[Yy][Ee][Ss])
+                WATCHDOG_CHOICE_RESULT=1
+                return 0
+                ;;
+            [Nn]|[Nn][Oo])
+                WATCHDOG_CHOICE_RESULT=0
+                return 0
+                ;;
+            *)
+                echo -e "  \e[1;31m[ERROR]\e[0m Please enter yes or no"
+                ;;
+        esac
+    done
+}
+
 # Setup Watchdog 
 setupResourceWatchdog() {
     
@@ -786,6 +811,7 @@ setupResourceWatchdog() {
     local mem_threshold=80
     local io_threshold=80
     local duration=60
+    local max_captures=1
 
     echo ""
     echo -e "\e[1;37mResource Watchdog Mode\e[0m"
@@ -859,6 +885,26 @@ setupResourceWatchdog() {
         duration=60
     fi
 
+    echo ""
+    readWatchdogYesNo "Capture high resolution disk counters? (yes/no): " || return 1
+    if [ "$WATCHDOG_CHOICE_RESULT" -eq 1 ]; then
+        high_res_disk_metrics="ON"
+    else
+        high_res_disk_metrics="OFF"
+    fi
+
+    readWatchdogYesNo "Re-arm watchdog after each capture? (yes/no): " || return 1
+    if [ "$WATCHDOG_CHOICE_RESULT" -eq 1 ]; then
+        while true; do
+            read -rp "Maximum captures (0 for unlimited, 2 or more for limited): " max_captures
+            if [[ "$max_captures" =~ ^[0-9]+$ ]] &&
+               { [ "$max_captures" -eq 0 ] || [ "$max_captures" -ge 2 ]; }; then
+                break
+            fi
+            echo -e "  \e[1;31m[ERROR]\e[0m Enter 0 for unlimited or a value of 2 or more"
+        done
+    fi
+
     local existing_pid
     if [ -r "$WATCHDOG_PID_FILE" ] &&
        read -r existing_pid < "$WATCHDOG_PID_FILE"; then
@@ -882,7 +928,7 @@ setupResourceWatchdog() {
     nohup /bin/bash "$WATCHDOG_SCRIPT_PATH" --watchdog-run \
         "$monitor_cpu" "$monitor_mem" "$monitor_io" \
         "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" \
-        "$high_res_disk_metrics" </dev/null >/dev/null 2>&1 &
+        "$high_res_disk_metrics" "$max_captures" </dev/null >/dev/null 2>&1 &
     local watchdog_pid=$!
     local log_file="$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log"
     local pid_file_tmp="${WATCHDOG_PID_FILE}.$$"
@@ -923,6 +969,14 @@ setupResourceWatchdog() {
     echo -e "\e[1;32m[OK]\e[0m Watchdog started in background"
     echo -e "  PID: \e[1;37m$watchdog_pid\e[0m"
     echo -e "  Log: \e[1;37m$log_file\e[0m"
+    echo -e "  High resolution disk counters: \e[1;37m$high_res_disk_metrics\e[0m"
+    if [ "$max_captures" -eq 0 ]; then
+        echo -e "  Recurrence: \e[1;37munlimited\e[0m"
+    elif [ "$max_captures" -gt 1 ]; then
+        echo -e "  Recurrence: \e[1;37m$max_captures captures\e[0m"
+    else
+        echo -e "  Recurrence: \e[1;37mdisabled\e[0m"
+    fi
     echo ""
     echo -e "To check status: \e[0;36m./$(basename $0) --watchdog-status\e[0m"
     echo -e "To stop:         \e[0;36m./$(basename $0) --watchdog-stop\e[0m"
@@ -937,6 +991,16 @@ runResourceWatchdog() {
     local mem_threshold=$5
     local io_threshold=$6
     local duration=$7
+    local high_res_disk_metrics=$8
+    local max_captures=$9
+    local capture_count=0
+    local recurrence_description="disabled"
+
+    if [ "$max_captures" -eq 0 ]; then
+        recurrence_description="unlimited"
+    elif [ "$max_captures" -gt 1 ]; then
+        recurrence_description="$max_captures captures"
+    fi
     
     # Setup logging
     mkdir -p "$WATCHDOG_LOG_DIR" || return 1
@@ -949,6 +1013,8 @@ runResourceWatchdog() {
         echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Monitoring: CPU=$monitor_cpu MEM=$monitor_mem IO=$monitor_io"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Thresholds: CPU=${cpu_threshold}% MEM=${mem_threshold}% IO=${io_threshold}%"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture duration: ${duration}s"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] High resolution disk counters: $high_res_disk_metrics"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Recurrence: $recurrence_description"
     } >> "$LOG_FILE"; then
         return 1
     fi
@@ -1015,19 +1081,25 @@ runResourceWatchdog() {
 
         # Trigger collection if threshold exceeded
         if [ "$trigger" == "1" ]; then
+            ((capture_count++))
             echo "$(date '+%Y-%m-%d %H:%M:%S') [TRIGGER] Threshold exceeded: $trigger_reason" >> "$LOG_FILE"
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [ACTION] Starting data collection (${duration}s)" >> "$LOG_FILE"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [ACTION] Starting data collection #$capture_count (${duration}s)" >> "$LOG_FILE"
             
             # Set runmode for the collection
-            runmode="Watchdog Triggered - $trigger_reason - $duration seconds"
+            runmode="Watchdog Triggered - Capture $capture_count - $trigger_reason - $duration seconds"
             
             # Call dataCapture directly (no script spawning!)
             dataCapture "$duration" "$high_res_disk_metrics"
             
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Collection complete" >> "$LOG_FILE"
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog exiting (triggered)" >> "$LOG_FILE"
-            
-            exit 0
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Collection #$capture_count complete" >> "$LOG_FILE"
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [OUTPUT] Archive: $LAST_CAPTURE_ARCHIVE" >> "$LOG_FILE"
+
+            if [ "$max_captures" -ne 0 ] && [ "$capture_count" -ge "$max_captures" ]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture limit reached; watchdog exiting" >> "$LOG_FILE"
+                exit 0
+            fi
+
+            echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog re-armed with the same settings" >> "$LOG_FILE"
         fi
 
         # Sleep before next check
@@ -1314,11 +1386,10 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --watchdog-run)
-            if [ "$#" -ne 9 ]; then
+            if [ "$#" -ne 10 ]; then
                 exit 2
             fi
-            high_res_disk_metrics=$9
-            runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+            runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}"
             exit $?
             ;;
         --watchdog-status)
@@ -1349,7 +1420,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         --version)
-            echo "Linux All-in-One Performance Collector, version 2.3.0"
+            echo "Linux All-in-One Performance Collector, version 2.3.1"
             exit 0
             ;;
         -h|--help)

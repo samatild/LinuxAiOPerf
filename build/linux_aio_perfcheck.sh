@@ -725,6 +725,56 @@ function removeCronJobs() {
 # PID file location
 WATCHDOG_PID_FILE="/tmp/linuxaio_watchdog.pid"
 WATCHDOG_LOG_DIR="/tmp/linuxaio_watchdog_logs"
+WATCHDOG_SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || printf '%s' "$0")"
+
+isWatchdogProcess() {
+    local pid=$1
+    local process_state
+    local command_line
+
+    [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+    kill -0 "$pid" 2>/dev/null || return 1
+
+    process_state=$(ps -o stat= -p "$pid" 2>/dev/null) || return 1
+    [[ "$process_state" != Z* ]] || return 1
+
+    command_line=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null) || return 1
+    if [[ "$command_line" == *"--watchdog-run"* ]]; then
+        return 0
+    fi
+
+    # Recognize watchdogs started by versions before the detached runner existed.
+    [[ "$command_line" == *"$WATCHDOG_SCRIPT_PATH"* ]] &&
+        grep -Fq "Watchdog started (PID: $pid)" "$WATCHDOG_LOG_DIR/watchdog_$pid.log" 2>/dev/null
+}
+
+cleanupResourceWatchdog() {
+    local temp_iostat=$1
+    local watchdog_pid=$2
+    local recorded_pid
+
+    rm -f "$temp_iostat"
+    if [ -r "$WATCHDOG_PID_FILE" ] &&
+       read -r recorded_pid < "$WATCHDOG_PID_FILE" &&
+       [ "$recorded_pid" = "$watchdog_pid" ]; then
+        rm -f "$WATCHDOG_PID_FILE"
+    fi
+}
+
+readWatchdogThreshold() {
+    local resource_name=$1
+
+    while true; do
+        if ! read -p "  $resource_name threshold (0-100): " WATCHDOG_THRESHOLD_RESULT; then
+            return 1
+        fi
+        if [[ "$WATCHDOG_THRESHOLD_RESULT" =~ ^[0-9]+$ ]] &&
+           [ "$WATCHDOG_THRESHOLD_RESULT" -le 100 ]; then
+            return 0
+        fi
+        echo -e "  \e[1;31m[ERROR]\e[0m Value must be between 0 and 100"
+    done
+}
 
 # Setup Watchdog 
 setupResourceWatchdog() {
@@ -758,23 +808,33 @@ setupResourceWatchdog() {
         echo ""
         
         read -p "Monitor CPU? (yes/no): " cpu_choice
-        if [ "$cpu_choice" == "yes" ]; then
+        if [[ "$cpu_choice" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
             monitor_cpu=1
-            read -p "  CPU threshold (0-100): " cpu_threshold
+            readWatchdogThreshold "CPU" || return 1
+            cpu_threshold=$WATCHDOG_THRESHOLD_RESULT
         fi
         
         read -p "Monitor Memory? (yes/no): " mem_choice
-        if [ "$mem_choice" == "yes" ]; then
+        if [[ "$mem_choice" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
             monitor_mem=1
-            read -p "  Memory threshold (0-100): " mem_threshold
+            readWatchdogThreshold "Memory" || return 1
+            mem_threshold=$WATCHDOG_THRESHOLD_RESULT
         fi
         
         read -p "Monitor Disk IO? (yes/no): " io_choice
-        if [ "$io_choice" == "yes" ]; then
+        if [[ "$io_choice" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]; then
             monitor_io=1
-            read -p "  Disk IO threshold (0-100): " io_threshold
+            readWatchdogThreshold "Disk IO" || return 1
+            io_threshold=$WATCHDOG_THRESHOLD_RESULT
         fi
-    
+
+        if [ "$monitor_cpu" -eq 0 ] && [ "$monitor_mem" -eq 0 ] && [ "$monitor_io" -eq 0 ]; then
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m Select at least one resource to monitor"
+            echo ""
+            return 1
+        fi
+
         while true; do
             read -p "Capture duration (1-300 seconds): " duration
             if [[ "$duration" =~ ^[0-9]+$ ]]; then
@@ -799,17 +859,70 @@ setupResourceWatchdog() {
         duration=60
     fi
 
-    # Start watchdog in background
-    runResourceWatchdog "$monitor_cpu" "$monitor_mem" "$monitor_io" "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" &
+    local existing_pid
+    if [ -r "$WATCHDOG_PID_FILE" ] &&
+       read -r existing_pid < "$WATCHDOG_PID_FILE"; then
+        if isWatchdogProcess "$existing_pid"; then
+            echo ""
+            echo -e "\e[1;31m[ERROR]\e[0m A watchdog is already running (PID: $existing_pid)"
+            echo ""
+            return 1
+        fi
+        rm -f "$WATCHDOG_PID_FILE"
+    fi
+
+    if ! mkdir -p "$WATCHDOG_LOG_DIR" || [ ! -w "$WATCHDOG_LOG_DIR" ]; then
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Cannot write watchdog logs to $WATCHDOG_LOG_DIR"
+        echo ""
+        return 1
+    fi
+
+    # Run through a new shell process so the watchdog survives terminal logout.
+    nohup /bin/bash "$WATCHDOG_SCRIPT_PATH" --watchdog-run \
+        "$monitor_cpu" "$monitor_mem" "$monitor_io" \
+        "$cpu_threshold" "$mem_threshold" "$io_threshold" "$duration" \
+        "$high_res_disk_metrics" </dev/null >/dev/null 2>&1 &
     local watchdog_pid=$!
-    
-    # Save PID to file
-    echo "$watchdog_pid" > "$WATCHDOG_PID_FILE"
-    
+    local log_file="$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log"
+    local pid_file_tmp="${WATCHDOG_PID_FILE}.$$"
+
+    if ! printf '%s\n' "$watchdog_pid" > "$pid_file_tmp" ||
+       ! mv -f "$pid_file_tmp" "$WATCHDOG_PID_FILE"; then
+        kill "$watchdog_pid" 2>/dev/null
+        rm -f "$pid_file_tmp"
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Could not create watchdog PID file"
+        echo ""
+        return 1
+    fi
+
+    local startup_attempt
+    for startup_attempt in {1..100}; do
+        if grep -q '\[METRIC\]' "$log_file" 2>/dev/null; then
+            break
+        fi
+        if ! kill -0 "$watchdog_pid" 2>/dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+
+    if ! isWatchdogProcess "$watchdog_pid" ||
+       ! grep -q '\[METRIC\]' "$log_file" 2>/dev/null; then
+        kill "$watchdog_pid" 2>/dev/null
+        rm -f "$WATCHDOG_PID_FILE"
+        echo ""
+        echo -e "\e[1;31m[ERROR]\e[0m Watchdog failed to initialize"
+        echo -e "  Expected log: \e[1;37m$log_file\e[0m"
+        echo ""
+        return 1
+    fi
+
     echo ""
     echo -e "\e[1;32m[OK]\e[0m Watchdog started in background"
     echo -e "  PID: \e[1;37m$watchdog_pid\e[0m"
-    echo -e "  Log: \e[1;37m$WATCHDOG_LOG_DIR/watchdog_$watchdog_pid.log\e[0m"
+    echo -e "  Log: \e[1;37m$log_file\e[0m"
     echo ""
     echo -e "To check status: \e[0;36m./$(basename $0) --watchdog-status\e[0m"
     echo -e "To stop:         \e[0;36m./$(basename $0) --watchdog-stop\e[0m"
@@ -826,18 +939,23 @@ runResourceWatchdog() {
     local duration=$7
     
     # Setup logging
-    mkdir -p "$WATCHDOG_LOG_DIR"
+    mkdir -p "$WATCHDOG_LOG_DIR" || return 1
     local LOG_FILE="$WATCHDOG_LOG_DIR/watchdog_$BASHPID.log"
     local TEMP_IOSTAT="/tmp/linuxaio_iostat_$BASHPID.tmp"
     
     # Log startup
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog started (PID: $BASHPID)" >> "$LOG_FILE"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Monitoring: CPU=$monitor_cpu MEM=$monitor_mem IO=$monitor_io" >> "$LOG_FILE"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Thresholds: CPU=${cpu_threshold}% MEM=${mem_threshold}% IO=${io_threshold}%" >> "$LOG_FILE"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture duration: ${duration}s" >> "$LOG_FILE"
+    if ! {
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog started (PID: $BASHPID)"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Monitoring: CPU=$monitor_cpu MEM=$monitor_mem IO=$monitor_io"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Thresholds: CPU=${cpu_threshold}% MEM=${mem_threshold}% IO=${io_threshold}%"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Capture duration: ${duration}s"
+    } >> "$LOG_FILE"; then
+        return 1
+    fi
 
     # Trap to cleanup on exit
-    trap "rm -f '$TEMP_IOSTAT' '$WATCHDOG_PID_FILE'" EXIT SIGTERM SIGINT
+    trap 'cleanupResourceWatchdog "$TEMP_IOSTAT" "$BASHPID"' EXIT
+    trap 'exit 0' SIGTERM SIGINT
 
     # Main monitoring loop
     while true; do
@@ -850,28 +968,37 @@ runResourceWatchdog() {
         # Check CPU
         if [ "$monitor_cpu" == "1" ]; then
             cpu_util=$(mpstat 1 1 2>/dev/null | awk '/Average:/ {printf "%.0f", 100 - $NF}')
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] CPU: ${cpu_util}%" >> "$LOG_FILE"
-            
-            if [ -n "$cpu_util" ] && [ "$cpu_util" -gt "$cpu_threshold" ]; then
-                trigger=1
-                trigger_reason="CPU ${cpu_util}% > ${cpu_threshold}%"
+            if [[ "$cpu_util" =~ ^[0-9]+$ ]]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] CPU: ${cpu_util}%" >> "$LOG_FILE"
+
+                if [ "$cpu_util" -gt "$cpu_threshold" ]; then
+                    trigger=1
+                    trigger_reason="CPU ${cpu_util}% > ${cpu_threshold}%"
+                fi
+            else
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Unable to read CPU utilization from mpstat" >> "$LOG_FILE"
             fi
         fi
 
         # Check Memory
         if [ "$monitor_mem" == "1" ]; then
             mem_util=$(free 2>/dev/null | awk '/Mem:/ {printf "%.0f", 100 - (($7 / $2) * 100)}')
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] Memory: ${mem_util}%" >> "$LOG_FILE"
-            
-            if [ -n "$mem_util" ] && [ "$mem_util" -gt "$mem_threshold" ]; then
-                trigger=1
-                trigger_reason="${trigger_reason:+$trigger_reason, }Memory ${mem_util}% > ${mem_threshold}%"
+            if [[ "$mem_util" =~ ^[0-9]+$ ]]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [METRIC] Memory: ${mem_util}%" >> "$LOG_FILE"
+
+                if [ "$mem_util" -gt "$mem_threshold" ]; then
+                    trigger=1
+                    trigger_reason="${trigger_reason:+$trigger_reason, }Memory ${mem_util}% > ${mem_threshold}%"
+                fi
+            else
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Unable to read memory utilization from free" >> "$LOG_FILE"
             fi
         fi
 
         # Check Disk IO
         if [ "$monitor_io" == "1" ]; then
-            iostat -d -x 1 2 2>/dev/null | grep -E '^(sd|nvme)' > "$TEMP_IOSTAT"
+            iostat -d -x 1 2 2>/dev/null |
+                awk '$1 ~ /^(sd|hd|vd|xvd|nvme|mmcblk|dm-)/' > "$TEMP_IOSTAT"
             
             if [ -s "$TEMP_IOSTAT" ]; then
                 io_util=$(awk '{if ($NF > max) max = $NF} END {printf "%.0f", max}' "$TEMP_IOSTAT")
@@ -881,6 +1008,8 @@ runResourceWatchdog() {
                     trigger=1
                     trigger_reason="${trigger_reason:+$trigger_reason, }IO ${io_util}% > ${io_threshold}%"
                 fi
+            else
+                echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] Unable to read disk utilization from iostat" >> "$LOG_FILE"
             fi
         fi
 
@@ -898,8 +1027,6 @@ runResourceWatchdog() {
             echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Collection complete" >> "$LOG_FILE"
             echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] Watchdog exiting (triggered)" >> "$LOG_FILE"
             
-            # Clean up and exit
-            rm -f "$TEMP_IOSTAT" "$WATCHDOG_PID_FILE"
             exit 0
         fi
 
@@ -917,28 +1044,42 @@ checkWatchdogStatus() {
         return 1
     fi
     
-    local pid=$(cat "$WATCHDOG_PID_FILE")
+    local pid
+    read -r pid < "$WATCHDOG_PID_FILE"
     
-    if ps -p "$pid" > /dev/null 2>&1; then
+    if isWatchdogProcess "$pid"; then
         echo ""
-        echo -e "\e[1;32m[OK]\e[0m Watchdog is running"
-        echo -e "  PID: \e[1;37m$pid\e[0m"
-        
-        # Show log file if it exists
         local log_file="$WATCHDOG_LOG_DIR/watchdog_${pid}.log"
-        if [ -f "$log_file" ]; then
+        if [ ! -s "$log_file" ]; then
+            echo -e "\e[1;31m[ERROR]\e[0m Watchdog process is running but its log is missing"
+            echo -e "  PID: \e[1;37m$pid\e[0m"
+            echo -e "  Expected log: \e[1;37m$log_file\e[0m"
+            echo ""
+            return 1
+        fi
+
+        if ! grep -q '\[METRIC\]' "$log_file"; then
+            echo -e "\e[1;31m[ERROR]\e[0m Watchdog is running but has not attempted metric collection"
+            echo -e "  PID: \e[1;37m$pid\e[0m"
             echo -e "  Log: \e[1;37m$log_file\e[0m"
             echo ""
-            echo "Recent activity:"
-            tail -n 10 "$log_file" | while read line; do
-                echo "  $line"
-            done
+            return 1
         fi
+
+        echo -e "\e[1;32m[OK]\e[0m Watchdog is running with an active metric log"
+        echo -e "  PID: \e[1;37m$pid\e[0m"
+
+        echo -e "  Log: \e[1;37m$log_file\e[0m"
+        echo ""
+        echo "Recent activity:"
+        tail -n 10 "$log_file" | while read -r line; do
+            echo "  $line"
+        done
         echo ""
         return 0
     else
         echo ""
-        echo -e "\e[1;33m[WARNING]\e[0m Watchdog PID file exists but process is not running"
+        echo -e "\e[1;33m[WARNING]\e[0m PID file does not reference a running watchdog"
         echo "Cleaning up stale PID file..."
         rm -f "$WATCHDOG_PID_FILE"
         echo ""
@@ -955,22 +1096,23 @@ stopWatchdog() {
         return 1
     fi
     
-    local pid=$(cat "$WATCHDOG_PID_FILE")
+    local pid
+    read -r pid < "$WATCHDOG_PID_FILE"
     
-    if ps -p "$pid" > /dev/null 2>&1; then
+    if isWatchdogProcess "$pid"; then
         echo ""
         echo -e "\e[1;36m→\e[0m Stopping watchdog (PID: $pid)..."
         kill "$pid" 2>/dev/null
         
         # Wait for process to terminate
         local count=0
-        while ps -p "$pid" > /dev/null 2>&1 && [ $count -lt 10 ]; do
+        while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
             sleep 0.5
             ((count++))
         done
         
         # Force kill if still running
-        if ps -p "$pid" > /dev/null 2>&1; then
+        if kill -0 "$pid" 2>/dev/null; then
             kill -9 "$pid" 2>/dev/null
         fi
         
@@ -1170,6 +1312,14 @@ while [[ $# -gt 0 ]]; do
         --skip-checks)
             skip_checks="ON"
             shift
+            ;;
+        --watchdog-run)
+            if [ "$#" -ne 9 ]; then
+                exit 2
+            fi
+            high_res_disk_metrics=$9
+            runResourceWatchdog "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+            exit $?
             ;;
         --watchdog-status)
             checkWatchdogStatus

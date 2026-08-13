@@ -4,9 +4,9 @@ import { Activity, Check, Copy, GitBranch, LockKeyhole, Terminal, Zap } from 'lu
 import { useUpload } from '../hooks/useUpload';
 import { setReportData } from '../store/reportStore';
 import UploadBox from '../components/upload/UploadBox';
+import UploadProgress from '../components/upload/UploadProgress';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import Spinner from '../components/ui/Spinner';
 import KofiButton from '../components/ui/KofiButton';
 import { GITHUB_URL } from '../version';
 
@@ -16,10 +16,15 @@ sudo ./linux_aio_perfcheck.sh
 # Or for quick 60s capture:
 # sudo ./linux_aio_perfcheck.sh --quick -t 60`;
 
+const DOCKER_RUN_COMMAND = `docker pull samuelmatildes/linuxaioperf-react:latest
+docker run --rm -p 8000:8000 samuelmatildes/linuxaioperf-react:latest
+# Then open http://localhost:8000`;
+
 export default function Upload() {
   const { state, upload } = useUpload();
   const navigate = useNavigate();
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [dockerCopyStatus, setDockerCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
     if (state.status === 'done') {
@@ -35,6 +40,16 @@ export default function Upload() {
         window.setTimeout(() => setCopyStatus('idle'), 2000);
       },
       () => setCopyStatus('failed'),
+    );
+  }
+
+  function copyDockerRun() {
+    navigator.clipboard.writeText(DOCKER_RUN_COMMAND).then(
+      () => {
+        setDockerCopyStatus('copied');
+        window.setTimeout(() => setDockerCopyStatus('idle'), 2000);
+      },
+      () => setDockerCopyStatus('failed'),
     );
   }
 
@@ -70,10 +85,10 @@ export default function Upload() {
 
           {state.status === 'uploading' ? (
             <div
-              className="upload-panel rounded-2xl p-12"
+              className="upload-panel rounded-2xl p-6 sm:p-10"
               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             >
-              <Spinner label="Processing archive — this may take up to 60 seconds..." />
+              <UploadProgress percent={state.percent} stage={state.stage} log={state.log} />
             </div>
           ) : (
             <div
@@ -99,6 +114,23 @@ export default function Upload() {
               </button>
             </div>
             <pre className="quick-start-command"><code>{QUICK_START_COMMAND}</code></pre>
+          </section>
+
+          <section className="quick-start" aria-labelledby="local-run-title">
+            <div className="quick-start-header">
+              <div>
+                <div className="quick-start-title">
+                  <LockKeyhole size={16} />
+                  <h3 id="local-run-title">Archive too big or too sensitive to upload here?</h3>
+                </div>
+                <p>Run the same analyser locally with Docker — the archive never leaves your machine.</p>
+              </div>
+              <button type="button" onClick={copyDockerRun} className="quick-start-copy">
+                {dockerCopyStatus === 'copied' ? <Check size={15} /> : <Copy size={15} />}
+                {dockerCopyStatus === 'copied' ? 'Copied' : dockerCopyStatus === 'failed' ? 'Copy failed' : 'Copy'}
+              </button>
+            </div>
+            <pre className="quick-start-command"><code>{DOCKER_RUN_COMMAND}</code></pre>
           </section>
 
           {state.status === 'error' && (

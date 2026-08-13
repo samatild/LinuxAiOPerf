@@ -1,7 +1,8 @@
 # Linux AIO Performance
 
-[![Latest Release](https://img.shields.io/badge/release-v2.3.0-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
+[![Latest Release](https://img.shields.io/badge/release-v2.3.2-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
+[![Live App](https://img.shields.io/badge/app-linuxaioperf.matildes.dev-brightgreen.svg)](https://linuxaioperf.matildes.dev/)
 <a href="https://ko-fi.com/L8S723YI44" target="_blank" rel="noopener noreferrer"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" height="20" alt="Like the tool? Buy me a Coffee" /></a>
 
 <p>
@@ -10,7 +11,7 @@
 
 Linux AIO Performance helps investigate Linux performance problems. Run one collector script on the affected host, upload the generated archive, and explore an interactive report covering CPU, memory, disk, network, processes, and system configuration.
 
-**[Open the hosted analyser](https://linuxaioperf.matildes.dev)** · **[Download a release](https://github.com/samatild/LinuxAiOPerf/releases/latest)**
+**[Open the hosted analyser](https://linuxaioperf.matildes.dev)** · **[Run it locally](https://github.com/samatild/LinuxAiOPerf/blob/debug/network-processor-hang/README.md#run-locally)** · **[Download a release](https://github.com/samatild/LinuxAiOPerf/releases/latest)**
 
 ## How it works
 
@@ -102,13 +103,22 @@ The hosted analyser processes an uploaded archive to generate the report and doe
 
 ## Run locally
 
-The React frontend and analysis API can run together in Docker:
+If a collector archive is too large or too sensitive to upload to the hosted analyser, run the same React app locally with Docker — the archive never leaves your machine.
+
+**Option 1: Pull the ready-made image (fastest)**
+
+```bash
+docker pull samuelmatildes/linuxaioperf-react:latest
+docker run --rm -p 8000:8000 samuelmatildes/linuxaioperf-react:latest
+```
+
+**Option 2: Build from source with Docker Compose**
 
 ```bash
 docker compose -f docker-compose.v3.yml up --build
 ```
 
-Open `http://localhost:8000` and upload a collector archive.
+Either way, open `http://localhost:8000` and upload a collector archive.
 
 ## Command reference
 

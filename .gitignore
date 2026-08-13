@@ -166,3 +166,5 @@ cython_debug/
 # Local Testing & Examples
 uploads/
 examples/*/
+.venv-dev/
+tmp/

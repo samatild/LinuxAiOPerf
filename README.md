@@ -102,13 +102,22 @@ The hosted analyser processes an uploaded archive to generate the report and doe
 
 ## Run locally
 
-The React frontend and analysis API can run together in Docker:
+If a collector archive is too large or too sensitive to upload to the hosted analyser, run the same React app locally with Docker — the archive never leaves your machine.
+
+**Option 1: Pull the ready-made image (fastest)**
+
+```bash
+docker pull samuelmatildes/linuxaioperf-react:latest
+docker run --rm -p 8000:8000 samuelmatildes/linuxaioperf-react:latest
+```
+
+**Option 2: Build from source with Docker Compose**
 
 ```bash
 docker compose -f docker-compose.v3.yml up --build
 ```
 
-Open `http://localhost:8000` and upload a collector archive.
+Either way, open `http://localhost:8000` and upload a collector archive.
 
 ## Command reference
 

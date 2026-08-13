@@ -4,9 +4,9 @@ import { Activity, Check, Copy, GitBranch, LockKeyhole, Terminal, Zap } from 'lu
 import { useUpload } from '../hooks/useUpload';
 import { setReportData } from '../store/reportStore';
 import UploadBox from '../components/upload/UploadBox';
+import UploadProgress from '../components/upload/UploadProgress';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import Spinner from '../components/ui/Spinner';
 import KofiButton from '../components/ui/KofiButton';
 import { GITHUB_URL } from '../version';
 
@@ -70,10 +70,10 @@ export default function Upload() {
 
           {state.status === 'uploading' ? (
             <div
-              className="upload-panel rounded-2xl p-12"
+              className="upload-panel rounded-2xl p-6 sm:p-10"
               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             >
-              <Spinner label="Processing archive — this may take up to 60 seconds..." />
+              <UploadProgress percent={state.percent} stage={state.stage} log={state.log} />
             </div>
           ) : (
             <div

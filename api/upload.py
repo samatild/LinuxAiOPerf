@@ -22,7 +22,13 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 # ── Path setup ──────────────────────────────────────────────────────────────
-WEBAPP_DIR = os.path.join(os.path.dirname(__file__), '..', 'webapp')
+# Vercel's Python runtime doesn't guarantee this file's own directory is on
+# sys.path (unlike local dev / Docker, where api/ ends up importable via
+# other means) — add it explicitly so sibling modules like lazy_details can
+# be imported below.
+API_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, API_DIR)
+WEBAPP_DIR = os.path.join(API_DIR, '..', 'webapp')
 sys.path.insert(0, WEBAPP_DIR)
 
 import plotly.io as pio

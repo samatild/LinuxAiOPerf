@@ -11,6 +11,12 @@ import plotly.graph_objects as go
 
 from core.base import BaseDataProcessor, DataProcessorError
 
+# iostat columns already expressed in KB/s. Plotly's default axis tick
+# renderer applies its own SI-prefix abbreviation (e.g. "15k") which is
+# ambiguous when stacked on top of an already-scaled "kB/s" unit, so
+# these are rescaled to the most human-readable unit before plotting.
+THROUGHPUT_COLUMNS = {'rkB/s', 'wkB/s', 'dkB/s'}
+
 
 class DiskMetricsProcessor(BaseDataProcessor):
     """
@@ -98,11 +104,32 @@ class DiskMetricsProcessor(BaseDataProcessor):
             for metric in metric_cols:
                 fig = go.Figure()
 
+                is_throughput = metric in THROUGHPUT_COLUMNS
+                unit_label = metric
+                divisor = 1
+
+                if is_throughput:
+                    # Determine a single shared unit scale for this metric
+                    # across all devices, based on the overall max value,
+                    # so every device trace on the plot uses the same
+                    # human-readable unit (e.g. all in MB/s).
+                    all_values = pd.to_numeric(df[metric], errors='coerce')
+                    _, unit_label = self.scale_throughput_series(
+                        all_values, base_unit="KB")
+                    unit_scale = {
+                        "KB/s": 1, "MB/s": 1024,
+                        "GB/s": 1024 ** 2, "TB/s": 1024 ** 3
+                    }
+                    divisor = unit_scale.get(unit_label, 1)
+
                 # Add traces for each device
                 for device in device_labels.unique():
                     device_data = df[df[df.columns[1]] == device]
                     x = device_data[device_data.columns[0]]  # Timestamp
                     y = pd.to_numeric(device_data[metric])   # Metric values
+                    if divisor != 1:
+                        y = y / divisor
+
                     fig.add_trace(
                         go.Scatter(
                             x=x, y=y, mode='lines',
@@ -110,10 +137,16 @@ class DiskMetricsProcessor(BaseDataProcessor):
                         )
                     )
 
-                # Apply layout
+                # Apply layout. For throughput metrics the axis title now
+                # reflects the actual rescaled unit (e.g. "wkB/s (MB/s)")
+                # and Plotly's SI-prefix tick abbreviation is disabled to
+                # avoid stacking ambiguously on top of it (see issue #89).
+                y_title = f"{metric} ({unit_label})" if is_throughput \
+                    else metric
                 layout = self.get_common_plot_layout(
                     title=f'Disk {metric} - All Devices',
-                    y_title=metric
+                    y_title=y_title,
+                    disable_axis_si_prefix=is_throughput
                 )
                 fig.update_layout(**layout)
 

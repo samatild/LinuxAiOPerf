@@ -142,7 +142,9 @@ class BaseDataProcessor(ABC):
             raise DataProcessorError(f"Failed to write filtered data: {e}")
 
     def get_common_plot_layout(self, title: str, x_title: str = "Timestamp",
-                               y_title: str = "Value") -> Dict[str, Any]:
+                               y_title: str = "Value",
+                               disable_axis_si_prefix: bool = False
+                               ) -> Dict[str, Any]:
         """
         Get common plot layout configuration.
 
@@ -150,11 +152,17 @@ class BaseDataProcessor(ABC):
             title: Plot title
             x_title: X-axis title
             y_title: Y-axis title
+            disable_axis_si_prefix: When True, prevents Plotly from
+                applying its own SI-prefix abbreviation (e.g. "15k") to
+                y-axis tick labels. Useful when the underlying values are
+                already expressed in a scaled unit (e.g. KB/s), where
+                Plotly's auto-abbreviation would stack ambiguously with
+                the unit already baked into the axis title.
 
         Returns:
             Layout configuration dictionary
         """
-        return {
+        layout = {
             'template': "seaborn",
             'title': title,
             'xaxis_title': x_title,
@@ -178,6 +186,56 @@ class BaseDataProcessor(ABC):
                 'tickformat': "%Y-%m-%d %H:%M:%S"
             }
         }
+
+        if disable_axis_si_prefix:
+            layout['yaxis'] = {
+                'exponentformat': "none",
+                'separatethousands': True
+            }
+
+        return layout
+
+    @staticmethod
+    def scale_throughput_series(
+        series: pd.Series, base_unit: str = "KB"
+    ) -> Tuple[pd.Series, str]:
+        """
+        Rescale a throughput series (already expressed in ``base_unit``
+        per second) to the largest unit that keeps values in a
+        human-readable range, avoiding ambiguity with Plotly's automatic
+        SI-prefix axis tick abbreviation (e.g. a raw "15000 KB/s" value
+        being displayed on the axis as just "15k", which looks like
+        "15 thousand KB/s" rather than the correct "15 MB/s").
+
+        Args:
+            series: Numeric series already expressed in ``base_unit``/s.
+            base_unit: The unit the input series is already expressed in
+                (defaults to "KB", matching iostat's kB/s columns).
+
+        Returns:
+            Tuple of (rescaled_series, unit_label) where unit_label is
+            e.g. "KB/s", "MB/s" or "GB/s".
+        """
+        units = ["KB", "MB", "GB", "TB"]
+        try:
+            start_idx = units.index(base_unit)
+        except ValueError:
+            start_idx = 0
+
+        max_value = series.abs().max()
+        scale = 0
+        # Each step up divides by 1024, keeping typical values below 1024
+        while (
+            pd.notna(max_value)
+            and max_value >= 1024
+            and start_idx + scale < len(units) - 1
+        ):
+            max_value /= 1024
+            scale += 1
+
+        scaled_series = series / (1024 ** scale) if scale else series
+        unit_label = f"{units[start_idx + scale]}/s"
+        return scaled_series, unit_label
 
     def process(self) -> Tuple[pd.DataFrame, List[go.Figure]]:
         """

@@ -544,7 +544,19 @@ def _compute_stage_weights(work_dir: str) -> dict:
 
 
 class ProgressReporter:
-    """Reports stage progress + verbose log lines into REPORTS[report_id].
+    """Streams stage progress + verbose log lines directly onto the HTTP
+    response as NDJSON lines (one JSON object per line), instead of writing
+    into a shared in-memory registry that a *separate* later request would
+    poll.
+
+    This matters because the previous design (background thread + poll via
+    GET /api/progress) relied on server state surviving across two distinct
+    HTTP requests. That's true on a persistent process (local dev, Docker),
+    but not guaranteed on classic serverless platforms like Vercel, where a
+    background thread can be frozen/killed as soon as the initiating request
+    ends, and a later poll request has no guarantee of landing on the same
+    warm instance. Streaming progress within a single request/response
+    removes that dependency entirely (see issue #88).
 
     Stages are weighted by input file size so the percent bar advances
     proportionally to how much data actually needs to be parsed. A background
@@ -553,8 +565,8 @@ class ProgressReporter:
     bar doesn't freeze while a huge file is being parsed.
     """
 
-    def __init__(self, report_id: str, weights: dict):
-        self.report_id = report_id
+    def __init__(self, emit, weights: dict):
+        self.emit = emit  # emit(percent: float|None, message: str|None, log_it: bool)
         self.weights = weights
         self.total_weight = sum(weights.values()) or 1
         self.done_weight = 0.0
@@ -564,27 +576,13 @@ class ProgressReporter:
         span = WEIGHTED_END_PCT - FLAT_START_PCT
         return FLAT_START_PCT + (weight / self.total_weight) * span
 
-    def _push(self, percent, message, log_it: bool):
-        with _REPORTS_LOCK:
-            entry = REPORTS.get(self.report_id)
-            if entry is None:
-                return
-            if percent is not None:
-                entry['percent'] = max(entry.get('percent', 0), round(percent, 1))
-            if message:
-                entry['stage'] = message
-                if log_it:
-                    entry['log'].append({'ts': time.time(), 'message': message})
-                    if len(entry['log']) > 500:
-                        entry['log'] = entry['log'][-500:]
-
     def flat(self, percent: float, message: str):
         """Set an absolute percent for a fast, unweighted early/late step."""
-        self._push(percent, message, log_it=True)
+        self.emit(percent, message, True)
 
     def begin(self, stage_key: str, message: str):
         weight = self.weights.get(stage_key, 0)
-        self._push(self._percent_for(self.done_weight), message, log_it=True)
+        self.emit(self._percent_for(self.done_weight), message, True)
 
         self._ticker_stop = threading.Event()
         stop_event = self._ticker_stop
@@ -593,7 +591,7 @@ class ProgressReporter:
             simulated = 0.0
             while not stop_event.wait(0.6):
                 simulated += (weight - simulated) * 0.15
-                self._push(self._percent_for(self.done_weight + simulated), None, log_it=False)
+                self.emit(self._percent_for(self.done_weight + simulated), None, False)
 
         threading.Thread(target=tick, daemon=True).start()
 
@@ -602,20 +600,29 @@ class ProgressReporter:
             self._ticker_stop.set()
             self._ticker_stop = None
         self.done_weight += self.weights.get(stage_key, 0)
-        self._push(self._percent_for(self.done_weight), None, log_it=False)
+        self.emit(self._percent_for(self.done_weight), None, False)
 
 
 # ── Lazy report registry ──────────────────────────────────────────────────────
 #
-# Only the handful of files actually needed to serve on-demand /api/chunk
-# requests are kept on disk (instead of the whole extracted archive) so that
-# Process Details timestamps can be fetched later. A background sweep removes
-# anything older than REPORT_TTL_SECONDS as a backstop, but most of the memory
-# footprint is released immediately: unused extracted files are deleted right
-# after the pipeline finishes, and the (potentially huge) in-memory `result`
-# JSON is dropped as soon as it has been delivered once via GET /api/progress.
-# This matters on memory-constrained hosts (small containers, Vercel
-# functions) where /tmp is often RAM-backed (tmpfs) — see issue #88.
+# The main POST /api/upload request now does all the work (extraction,
+# processing, progress streaming) itself, in a single request/response — see
+# issue #88: relying on a background thread plus a *second*, later request
+# (GET /api/progress) to observe its result depended on server state
+# surviving across two separate HTTP requests, which classic serverless
+# platforms like Vercel don't guarantee (a background thread can be
+# frozen/killed once the initiating request ends, and a later request has no
+# guarantee of landing on the same warm instance).
+#
+# REPORTS is now only used to serve on-demand GET /api/chunk requests for
+# large Process Details tables (pidstat/top/iotop), which are genuinely
+# needed *after* the main response has already been sent (the user may click
+# a different timestamp minutes later). Only the handful of files actually
+# needed for that are kept on disk (instead of the whole extracted archive);
+# a background sweep removes anything older than REPORT_TTL_SECONDS as a
+# backstop. This still has the same small residual cross-request risk on
+# serverless, but is a deliberate, bounded trade-off (see README/issue #88
+# discussion) rather than the thing that was actually crashing.
 
 REPORT_TTL_SECONDS = int(os.environ.get('REPORT_TTL_SECONDS', 15 * 60))
 REPORTS: dict = {}
@@ -664,18 +671,13 @@ def _ensure_cleanup_thread():
         t.start()
 
 
-def _free_report_result(report_id: str):
-    """Drop the (large) cached result payload once it's had a fair chance to
-    be delivered — called from a one-shot timer, not the TTL sweep."""
-    with _REPORTS_LOCK:
-        entry = REPORTS.get(report_id)
-        if entry is not None:
-            entry['result'] = None
-
-
 # ── Vercel handler ────────────────────────────────────────────────────────────
 
 class handler(BaseHTTPRequestHandler):
+    # Chunked transfer-encoding (used to stream progress in do_POST) requires
+    # HTTP/1.1; BaseHTTPRequestHandler defaults to HTTP/1.0.
+    protocol_version = 'HTTP/1.1'
+
     def log_message(self, format, *args):
         pass
 
@@ -708,43 +710,7 @@ class handler(BaseHTTPRequestHandler):
         if parsed.path == '/api/chunk':
             self._handle_chunk_request(parsed)
             return
-        if parsed.path == '/api/progress':
-            self._handle_progress_request(parsed)
-            return
         self._send_json({'error': 'not found'}, 404)
-
-    def _handle_progress_request(self, parsed):
-        qs = urllib.parse.parse_qs(parsed.query)
-        report_id = qs.get('report_id', [''])[0]
-
-        with _REPORTS_LOCK:
-            entry = REPORTS.get(report_id)
-            if not entry:
-                payload = None
-            else:
-                payload = {
-                    'status': entry.get('status', 'processing'),
-                    'percent': entry.get('percent', 0),
-                    'stage': entry.get('stage', ''),
-                    'log': entry.get('log', []),
-                }
-                if entry.get('status') == 'done':
-                    payload['result'] = entry.get('result')
-                    # The frontend only needs the full result once (it stops
-                    # polling as soon as it receives it). Free this — often
-                    # the single largest per-report memory allocation —
-                    # shortly after first delivery instead of waiting for the
-                    # full REPORT_TTL_SECONDS window.
-                    if entry.get('result') is not None and not entry.get('_free_result_scheduled'):
-                        entry['_free_result_scheduled'] = True
-                        threading.Timer(10.0, _free_report_result, args=(report_id,)).start()
-                elif entry.get('status') == 'error':
-                    payload['error'] = entry.get('error')
-
-        if payload is None:
-            self._send_json({'error': 'report not found or expired, please re-upload'}, 404)
-            return
-        self._send_json(payload)
 
     def _handle_chunk_request(self, parsed):
         qs = urllib.parse.parse_qs(parsed.query)
@@ -777,6 +743,7 @@ class handler(BaseHTTPRequestHandler):
         work_dir = None
         register_job = False
         hex_id = None
+        streaming = False
         try:
             parts = parse_cgi_multipart(self)
             file_data = parts.get('file')
@@ -810,94 +777,102 @@ class handler(BaseHTTPRequestHandler):
                         shutil.move(src, dst)
                 shutil.rmtree(sub, ignore_errors=True)
 
-            # From here on, the extracted archive is owned by REPORTS/the
-            # background pipeline thread — hand off and respond immediately
-            # so the frontend can start polling GET /api/progress instead of
-            # blocking on a multi-minute POST.
             weights = _compute_stage_weights(work_dir)
+
+            # Stream progress + the final result as newline-delimited JSON
+            # (NDJSON) within this single request/response, instead of
+            # returning immediately and handing the work off to a background
+            # thread that a *separate* later request would poll (see #88 —
+            # that design relied on server state surviving across two HTTP
+            # requests, which isn't guaranteed on serverless platforms).
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/x-ndjson')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('X-Accel-Buffering', 'no')
+            self.send_header('Transfer-Encoding', 'chunked')
+            self.end_headers()
+            streaming = True
+
+            def emit(percent, message, log_it):
+                line = {}
+                if percent is not None:
+                    line['percent'] = round(percent, 1)
+                if message:
+                    line['stage'] = message
+                    if log_it:
+                        line['log'] = message
+                if not line:
+                    return
+                self._write_chunk(json.dumps(line).encode('utf-8') + b'\n')
+
+            emit(0, 'Archive extracted, starting analysis', True)
+            reporter = ProgressReporter(emit, weights)
+
+            report: dict = {'report_id': hex_id}
+            report['metadata'] = extract_metadata(work_dir)
+
+            reporter.flat(1, 'Reading archive metadata')
+
+            sc = extract_sysconfig(work_dir)
+            if sc:
+                report['sysconfig'] = sc
+            reporter.flat(3, 'Reading system configuration')
+
+            reporter.flat(FLAT_START_PCT, 'Processing performance metrics')
+            perf = extract_performance(work_dir, reporter)
+            if perf:
+                report['performance'] = perf
+
+            activity = extract_process_activity(work_dir, reporter)
+            if activity:
+                report['process_activity'] = activity
+
+            details, sections = extract_process_details(work_dir, reporter)
+            if details:
+                report['process_details'] = details
+
+            reporter.flat(99, 'Finalizing report')
+
+            # Only files referenced by `sections` are needed later, for
+            # on-demand GET /api/chunk reads (Process Details drill-down);
+            # everything else can be freed from disk (and, on tmpfs, RAM)
+            # right away.
+            _prune_work_dir(work_dir, sections)
             _ensure_cleanup_thread()
             with _REPORTS_LOCK:
                 REPORTS[hex_id] = {
                     'created': time.time(),
                     'work_dir': work_dir,
-                    'status': 'processing',
-                    'percent': 0,
-                    'stage': 'Starting…',
-                    'log': [{'ts': time.time(), 'message': 'Archive extracted, starting analysis'}],
-                    'sections': {},
+                    'sections': sections,
                 }
             register_job = True
 
-            t = threading.Thread(target=_run_pipeline, args=(hex_id, work_dir, weights), daemon=True)
-            t.start()
-
-            self._send_json({'report_id': hex_id}, 202)
+            self._write_chunk(json.dumps({'percent': 100, 'stage': 'Done', 'result': report}).encode('utf-8') + b'\n')
+            self._write_chunk(b'')
 
         except Exception as e:
             import traceback
             log.error(traceback.format_exc())
-            self._send_json({'error': f'Processing failed: {e}'}, 500)
+            if streaming:
+                try:
+                    self._write_chunk(json.dumps({'error': f'Processing failed: {e}'}).encode('utf-8') + b'\n')
+                    self._write_chunk(b'')
+                except Exception:
+                    pass
+            else:
+                self._send_json({'error': f'Processing failed: {e}'}, 500)
         finally:
-            # If the job was never registered (e.g. failed before hand-off),
-            # this request still owns work_dir and must clean it up itself.
+            # If the job was never registered (e.g. failed before it could be
+            # pruned/handed off for /api/chunk), this request still owns
+            # work_dir and must clean it up itself.
             if not register_job and work_dir and os.path.exists(work_dir):
                 shutil.rmtree(work_dir, ignore_errors=True)
 
-
-def _run_pipeline(report_id: str, work_dir: str, weights: dict):
-    """Runs the full extraction pipeline in a background thread, updating
-    REPORTS[report_id] with progress as it goes and the final result/error
-    when done."""
-    reporter = ProgressReporter(report_id, weights)
-    try:
-        report: dict = {'report_id': report_id}
-
-        reporter.flat(1, 'Reading archive metadata')
-        report['metadata'] = extract_metadata(work_dir)
-
-        reporter.flat(3, 'Reading system configuration')
-        sc = extract_sysconfig(work_dir)
-        if sc:
-            report['sysconfig'] = sc
-
-        reporter.flat(FLAT_START_PCT, 'Processing performance metrics')
-        perf = extract_performance(work_dir, reporter)
-        if perf:
-            report['performance'] = perf
-
-        activity = extract_process_activity(work_dir, reporter)
-        if activity:
-            report['process_activity'] = activity
-
-        details, sections = extract_process_details(work_dir, reporter)
-        if details:
-            report['process_details'] = details
-
-        reporter.flat(99, 'Finalizing report')
-
-        # Free most of this report's disk (and, on tmpfs, RAM) footprint
-        # immediately — only files referenced by `sections` are needed later
-        # for on-demand /api/chunk reads.
-        _prune_work_dir(work_dir, sections)
-
-        with _REPORTS_LOCK:
-            entry = REPORTS.get(report_id)
-            if entry is not None:
-                entry['status'] = 'done'
-                entry['percent'] = 100
-                entry['stage'] = 'Done'
-                entry['result'] = report
-                entry['sections'] = sections
-                entry['log'].append({'ts': time.time(), 'message': 'Report ready'})
-
-    except Exception as e:
-        import traceback
-        log.error(traceback.format_exc())
-        with _REPORTS_LOCK:
-            entry = REPORTS.get(report_id)
-            if entry is not None:
-                entry['status'] = 'error'
-                entry['error'] = str(e)
-                entry['log'].append({'ts': time.time(), 'message': f'Error: {e}'})
-        # Nothing to serve for a failed job — release the extracted archive.
-        shutil.rmtree(work_dir, ignore_errors=True)
+    def _write_chunk(self, data: bytes):
+        """Write one HTTP chunked-transfer-encoding frame and flush it
+        immediately so the client sees progress as it happens."""
+        self.wfile.write(b'%x\r\n' % len(data))
+        self.wfile.write(data)
+        self.wfile.write(b'\r\n')
+        self.wfile.flush()

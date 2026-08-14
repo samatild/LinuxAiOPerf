@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { ReportData } from '../types/report';
 
 export interface LogLine {
@@ -12,70 +12,82 @@ type UploadState =
   | { status: 'done'; data: ReportData }
   | { status: 'error'; message: string };
 
-const POLL_INTERVAL_MS = 800;
-
+// The full response body is a single request that streams newline-delimited
+// JSON (NDJSON) progress lines, ending with a final line containing the full
+// report (or an error). This avoids depending on server-side state surviving
+// across two separate HTTP requests (upload + poll), which isn't guaranteed
+// on serverless platforms like Vercel — see issue #88.
 export function useUpload() {
   const [state, setState] = useState<UploadState>({ status: 'idle' });
-  const pollTimer = useRef<number | null>(null);
-
-  function stopPolling() {
-    if (pollTimer.current !== null) {
-      window.clearTimeout(pollTimer.current);
-      pollTimer.current = null;
-    }
-  }
-
-  function pollProgress(reportId: string) {
-    pollTimer.current = window.setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/progress?report_id=${encodeURIComponent(reportId)}`);
-        const json = await res.json();
-        if (!res.ok || json.error) {
-          setState({ status: 'error', message: json.error ?? `HTTP ${res.status}` });
-          return;
-        }
-        if (json.status === 'done') {
-          setState({ status: 'done', data: json.result });
-          return;
-        }
-        if (json.status === 'error') {
-          setState({ status: 'error', message: json.error ?? 'Processing failed' });
-          return;
-        }
-        setState({
-          status: 'uploading',
-          percent: json.percent ?? 0,
-          stage: json.stage ?? '',
-          log: json.log ?? [],
-        });
-        pollProgress(reportId);
-      } catch (e) {
-        setState({ status: 'error', message: (e as Error).message });
-      }
-    }, POLL_INTERVAL_MS);
-  }
 
   async function upload(file: File) {
-    stopPolling();
     setState({ status: 'uploading', percent: 0, stage: 'Uploading archive…', log: [] });
     const form = new FormData();
     form.append('file', file);
 
+    let log: LogLine[] = [];
+
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setState({ status: 'error', message: json.error ?? `HTTP ${res.status}` });
+      if (!res.ok || !res.body) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const json = await res.json();
+          message = json.error ?? message;
+        } catch {
+          // response wasn't JSON (e.g. platform error page) — keep the HTTP status message
+        }
+        setState({ status: 'error', message });
         return;
       }
-      pollProgress(json.report_id);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, newlineIdx).trim();
+          buffer = buffer.slice(newlineIdx + 1);
+          if (!line) continue;
+
+          let json: any;
+          try {
+            json = JSON.parse(line);
+          } catch {
+            continue; // ignore malformed/partial line, shouldn't normally happen
+          }
+
+          if (json.error) {
+            setState({ status: 'error', message: json.error });
+            return;
+          }
+          if (json.result) {
+            setState({ status: 'done', data: json.result });
+            return;
+          }
+          if (json.log) {
+            log = [...log, { ts: Date.now(), message: json.log }];
+          }
+          setState((prev) => ({
+            status: 'uploading',
+            percent: json.percent ?? (prev.status === 'uploading' ? prev.percent : 0),
+            stage: json.stage ?? (prev.status === 'uploading' ? prev.stage : ''),
+            log,
+          }));
+        }
+      }
     } catch (e) {
       setState({ status: 'error', message: (e as Error).message });
     }
   }
 
   function reset() {
-    stopPolling();
     setState({ status: 'idle' });
   }
 

@@ -168,3 +168,5 @@ uploads/
 examples/*/
 .venv-dev/
 tmp/
+.vercel
+.env*

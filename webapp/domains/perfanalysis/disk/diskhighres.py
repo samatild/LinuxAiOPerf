@@ -79,20 +79,24 @@ class DiskHighResProcessor(BaseDataProcessor):
             (sectors_read_delta + sectors_write_delta) * 512 / 1024 / 1024
         )
 
-        # Calculate latency (in milliseconds)
+        # Calculate latency (in milliseconds). Use NaN (not 0) when no I/O
+        # completed in this sample window, since 0 is a misleadingly "real"
+        # latency value that skews percentile-based views (e.g. the latency
+        # boxplot's quartiles get dragged down to 0 by mostly-idle windows,
+        # see issue #87) -- NaN is excluded from percentile/box statistics
+        # and time-series line plots naturally render it as a gap.
         read_time_delta = device_data['Time_Reading'].diff()
         write_time_delta = device_data['Time_Writing'].diff()
 
-        # Avoid division by zero
         read_latency = np.where(
             reads_delta > 0,
             read_time_delta / reads_delta,
-            0
+            np.nan
         )
         write_latency = np.where(
             writes_delta > 0,
             write_time_delta / writes_delta,
-            0
+            np.nan
         )
 
         device_data['Read_Latency'] = read_latency
@@ -133,16 +137,16 @@ class DiskHighResProcessor(BaseDataProcessor):
         read_time_delta = resampled['Time_Reading'].diff()
         write_time_delta = resampled['Time_Writing'].diff()
 
-        # Avoid division by zero
+        # Avoid division by zero → use NaN (see note in _calculate_rates)
         resampled['Read_Latency'] = np.where(
             reads_delta > 0,
             read_time_delta / reads_delta,
-            0
+            np.nan
         )
         resampled['Write_Latency'] = np.where(
             writes_delta > 0,
             write_time_delta / writes_delta,
-            0
+            np.nan
         )
 
         return resampled

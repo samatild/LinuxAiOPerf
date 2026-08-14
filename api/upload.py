@@ -607,15 +607,42 @@ class ProgressReporter:
 
 # ── Lazy report registry ──────────────────────────────────────────────────────
 #
-# Extracted archives are kept on disk (instead of being deleted right after
-# the initial response) so that Process Details timestamps can be fetched
-# on demand via GET /api/chunk. A background sweep removes anything older
-# than REPORT_TTL_SECONDS, mirroring the legacy Flask app's cleanup thread.
+# Only the handful of files actually needed to serve on-demand /api/chunk
+# requests are kept on disk (instead of the whole extracted archive) so that
+# Process Details timestamps can be fetched later. A background sweep removes
+# anything older than REPORT_TTL_SECONDS as a backstop, but most of the memory
+# footprint is released immediately: unused extracted files are deleted right
+# after the pipeline finishes, and the (potentially huge) in-memory `result`
+# JSON is dropped as soon as it has been delivered once via GET /api/progress.
+# This matters on memory-constrained hosts (small containers, Vercel
+# functions) where /tmp is often RAM-backed (tmpfs) — see issue #88.
 
-REPORT_TTL_SECONDS = 15 * 60
+REPORT_TTL_SECONDS = int(os.environ.get('REPORT_TTL_SECONDS', 15 * 60))
 REPORTS: dict = {}
 _REPORTS_LOCK = threading.Lock()
 _cleanup_started = False
+
+
+def _prune_work_dir(work_dir: str, sections: dict):
+    """Delete every extracted file that isn't referenced by `sections` (i.e.
+    not needed later for on-demand /api/chunk reads). Frees the bulk of a
+    report's disk/RAM footprint (mpstat.txt, ps.txt, iostat, etc. are only
+    needed transiently during the initial pipeline run)."""
+    keep = {os.path.abspath(s['path']) for s in sections.values()}
+    try:
+        for name in os.listdir(work_dir):
+            path = os.path.join(work_dir, name)
+            if os.path.abspath(path) in keep:
+                continue
+            try:
+                if os.path.isfile(path) or os.path.islink(path):
+                    os.remove(path)
+                elif os.path.isdir(path):
+                    shutil.rmtree(path, ignore_errors=True)
+            except OSError as e:
+                log.warning(f'failed to prune {path}: {e}')
+    except OSError as e:
+        log.warning(f'failed to list {work_dir} for pruning: {e}')
 
 
 def _cleanup_expired_reports():
@@ -635,6 +662,15 @@ def _ensure_cleanup_thread():
         _cleanup_started = True
         t = threading.Thread(target=_cleanup_expired_reports, daemon=True)
         t.start()
+
+
+def _free_report_result(report_id: str):
+    """Drop the (large) cached result payload once it's had a fair chance to
+    be delivered — called from a one-shot timer, not the TTL sweep."""
+    with _REPORTS_LOCK:
+        entry = REPORTS.get(report_id)
+        if entry is not None:
+            entry['result'] = None
 
 
 # ── Vercel handler ────────────────────────────────────────────────────────────
@@ -694,6 +730,14 @@ class handler(BaseHTTPRequestHandler):
                 }
                 if entry.get('status') == 'done':
                     payload['result'] = entry.get('result')
+                    # The frontend only needs the full result once (it stops
+                    # polling as soon as it receives it). Free this — often
+                    # the single largest per-report memory allocation —
+                    # shortly after first delivery instead of waiting for the
+                    # full REPORT_TTL_SECONDS window.
+                    if entry.get('result') is not None and not entry.get('_free_result_scheduled'):
+                        entry['_free_result_scheduled'] = True
+                        threading.Timer(10.0, _free_report_result, args=(report_id,)).start()
                 elif entry.get('status') == 'error':
                     payload['error'] = entry.get('error')
 
@@ -830,6 +874,11 @@ def _run_pipeline(report_id: str, work_dir: str, weights: dict):
             report['process_details'] = details
 
         reporter.flat(99, 'Finalizing report')
+
+        # Free most of this report's disk (and, on tmpfs, RAM) footprint
+        # immediately — only files referenced by `sections` are needed later
+        # for on-demand /api/chunk reads.
+        _prune_work_dir(work_dir, sections)
 
         with _REPORTS_LOCK:
             entry = REPORTS.get(report_id)

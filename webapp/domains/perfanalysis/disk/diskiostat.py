@@ -11,6 +11,12 @@ import plotly.graph_objects as go
 
 from core.base import BaseDataProcessor, DataProcessorError
 
+# iostat columns already expressed in KB/s. Plotly's default axis tick
+# renderer applies its own SI-prefix abbreviation (e.g. "15k") which is
+# ambiguous when stacked on top of an already-scaled "kB/s" unit, so
+# these are rescaled to the most human-readable unit before plotting.
+THROUGHPUT_COLUMNS = {'rkB/s', 'wkB/s', 'dkB/s'}
+
 
 class DiskIostatProcessor(BaseDataProcessor):
     """
@@ -113,10 +119,17 @@ class DiskIostatProcessor(BaseDataProcessor):
                         )
                     )
 
-                # Apply layout
+                # Apply layout. This chart mixes metrics with different
+                # units (KB/s, requests/s, ms, %) on one shared axis, so
+                # we cannot rescale a single unit here - instead we
+                # disable Plotly's automatic SI-prefix tick abbreviation
+                # (e.g. "15k") which otherwise looks ambiguous stacked on
+                # top of units already baked into each metric name (see
+                # issue #89). Hover tooltips still show exact values.
                 layout = self.get_common_plot_layout(
                     title=f'Disk Metrics - {device}',
-                    y_title='Value'
+                    y_title='Value',
+                    disable_axis_si_prefix=True
                 )
                 fig.update_layout(**layout)
 

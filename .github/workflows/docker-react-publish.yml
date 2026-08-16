@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - chore/azure-react-webapp
 
 jobs:
   build-and-push:
@@ -27,8 +28,11 @@ jobs:
         with:
           images: samuelmatildes/linuxaioperf-react
           tags: |
-            type=raw,value=latest
-            type=sha,prefix=,format=short
+            # main retains the existing public latest tag.
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # The feature branch has its own readable tag and an immutable SHA tag.
+            type=raw,value=azure-feature,enable=${{ github.ref == 'refs/heads/chore/azure-react-webapp' }}
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -40,3 +44,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-azure-feature:
+    name: Deploy published feature image to Azure
+    needs: build-and-push
+    # The deployment stays entirely on the feature branch. main continues to
+    # build and publish its existing latest image without any Azure deployment.
+    if: github.ref == 'refs/heads/chore/azure-react-webapp'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy the immutable image already published by the build job
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_REACT_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_REACT_WEBAPP_PUBLISH_PROFILE }}
+          images: samuelmatildes/linuxaioperf-react:${{ github.sha }}

@@ -36,7 +36,7 @@ from ..sysconfig.lvm.lvmviz import (
     create_graph
 )
 
-script_version = "2.3.3"
+script_version = "2.3.4"
 
 
 def log_message(message, log_level='Info'):

@@ -19,6 +19,7 @@ import gzip
 import threading
 import time
 import urllib.parse
+from functools import wraps
 from http.server import BaseHTTPRequestHandler
 
 # ── Path setup ──────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ from http.server import BaseHTTPRequestHandler
 # other means) — add it explicitly so sibling modules like lazy_details can
 # be imported below.
 API_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT = os.path.abspath(os.path.join(API_DIR, '..'))
 sys.path.insert(0, API_DIR)
 WEBAPP_DIR = os.path.join(API_DIR, '..', 'webapp')
 sys.path.insert(0, WEBAPP_DIR)
@@ -43,9 +45,19 @@ from domains.procinfo.pidstat.pidstatmem import pidstatmem_extract_header_line
 from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs
 
 import lazy_details
+from workdir import working_directory
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('api.upload')
+
+
+def _in_upload_work_dir(function):
+    """Serialize processors that require relative paths inside an upload."""
+    @wraps(function)
+    def wrapped(work_dir, *args, **kwargs):
+        with working_directory(work_dir, restore_to=APP_ROOT):
+            return function(work_dir, *args, **kwargs)
+    return wrapped
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -139,6 +151,7 @@ def extract_metadata(work_dir: str) -> dict:
 
 # ── System Configuration ─────────────────────────────────────────────────────
 
+@_in_upload_work_dir
 def extract_sysconfig(work_dir: str) -> dict:
     sc = {}
 
@@ -217,6 +230,7 @@ def extract_sysconfig(work_dir: str) -> dict:
 
 # ── Performance (time-series charts) ─────────────────────────────────────────
 
+@_in_upload_work_dir
 def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = None) -> dict:
     orig = os.getcwd()
     os.chdir(work_dir)
@@ -298,6 +312,7 @@ def _top_consumers_to_figs(data: dict, metric_keys: list[tuple[str, str]]) -> li
     return figs
 
 
+@_in_upload_work_dir
 def extract_process_activity(work_dir: str, progress: 'ProgressReporter | None' = None) -> dict:
     orig = os.getcwd()
     os.chdir(work_dir)

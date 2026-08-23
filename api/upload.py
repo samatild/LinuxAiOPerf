@@ -39,6 +39,7 @@ WEBAPP_DIR = os.path.join(API_DIR, '..', 'webapp')
 sys.path.insert(0, WEBAPP_DIR)
 
 import plotly.io as pio
+import orjson
 
 from domains.factory import ProcessorFactory
 from domains.procperf.cpu.top_consumers import extract_top_cpu_consumers
@@ -764,7 +765,10 @@ class handler(BaseHTTPRequestHandler):
         pass
 
     def _send_json(self, data, status=200):
-        body = json.dumps(data).encode('utf-8')
+        # The complete large report is several hundred MB.  orjson serializes
+        # it faster than the stdlib and directly supports NumPy values emitted
+        # by Plotly, while preserving the JSON HTTP contract.
+        body = orjson.dumps(data, option=orjson.OPT_SERIALIZE_NUMPY)
         headers = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
 
         accepts_gzip = 'gzip' in self.headers.get('Accept-Encoding', '')

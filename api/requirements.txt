@@ -1,3 +1,4 @@
 pandas
 plotly
+orjson
 setuptools>=78.1.1

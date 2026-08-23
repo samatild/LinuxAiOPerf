@@ -20,6 +20,31 @@ type UploadState =
 export function useUpload() {
   const [state, setState] = useState<UploadState>({ status: 'idle' });
 
+  async function waitForLocalJob(jobId: string, log: LogLine[]) {
+    while (true) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      const res = await fetch(`/api/job?job_id=${encodeURIComponent(jobId)}`);
+      const job = await res.json();
+      if (!res.ok || job.error) {
+        setState({ status: 'error', message: job.error ?? `HTTP ${res.status}` });
+        return;
+      }
+      if (job.stage && log.at(-1)?.message !== job.stage) {
+        log = [...log, { ts: Date.now(), message: job.stage }];
+      }
+      setState({
+        status: 'uploading',
+        percent: job.percent ?? 0,
+        stage: job.stage ?? 'Processing archive…',
+        log,
+      });
+      if (job.status === 'done') {
+        setState({ status: 'done', data: job.result });
+        return;
+      }
+    }
+  }
+
   async function upload(file: File) {
     setState({ status: 'uploading', percent: 0, stage: 'Uploading archive…', log: [] });
     const form = new FormData();
@@ -38,6 +63,12 @@ export function useUpload() {
           // response wasn't JSON (e.g. platform error page) — keep the HTTP status message
         }
         setState({ status: 'error', message });
+        return;
+      }
+
+      if (res.status === 202) {
+        const job = await res.json();
+        await waitForLocalJob(job.job_id, log);
         return;
       }
 

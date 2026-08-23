@@ -55,6 +55,7 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
         'pids': set()    # all PIDs seen for this command
     })
     all_timestamps = set()
+    timestamp_cache = {}
     header_cols = None
 
     # Derive collection date from info.txt so time-only stamps get full datetime
@@ -92,17 +93,17 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
 
             # Build a full datetime string so Plotly renders a proper time axis
             if collection_date is not None:
-                try:
-                    if offset == 2:
-                        t = datetime.datetime.strptime(
-                            time_str, "%I:%M:%S %p")
-                    else:
-                        t = datetime.datetime.strptime(time_str, "%H:%M:%S")
-                    timestamp = datetime.datetime.combine(
-                        collection_date, t.time()
-                    ).strftime("%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    timestamp = time_str
+                timestamp = timestamp_cache.get(time_str)
+                if timestamp is None:
+                    try:
+                        if offset == 2:
+                            t = datetime.datetime.strptime(time_str, "%I:%M:%S %p")
+                        else:
+                            t = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                        timestamp = datetime.datetime.combine(collection_date, t.time()).strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        timestamp = time_str
+                    timestamp_cache[time_str] = timestamp
             else:
                 timestamp = time_str
 

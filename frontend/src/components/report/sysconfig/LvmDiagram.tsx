@@ -51,7 +51,7 @@ function VgCard({ name, size, free, pvCount, lvCount }: {
   );
 }
 
-function LvCard({ name, size, type }: { name: string; size: string; type: string }) {
+function LvCard({ name, size, type, device_mapper }: { name: string; size: string; type: string; device_mapper?: string }) {
   return (
     <div className="rounded-lg px-3 py-2 text-xs" style={{
       background: tinted(LV_COLOR, 12),
@@ -60,6 +60,7 @@ function LvCard({ name, size, type }: { name: string; size: string; type: string
       <div className="font-semibold truncate" style={{ color: LV_COLOR }}>{name}</div>
       <div style={{ color: 'var(--text-secondary)' }}>Size: {size}</div>
       <div style={{ color: 'var(--text-muted)' }}>{type}</div>
+      {device_mapper && <div style={{ color: 'var(--text-muted)' }}>Device: {device_mapper}</div>}
     </div>
   );
 }

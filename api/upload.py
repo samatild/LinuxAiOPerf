@@ -48,7 +48,7 @@ from domains.procperf.memory.top_consumers import extract_top_mem_consumers
 from domains.procinfo.pidstat.pidstatcpu import pidstat_extract_header_line
 from domains.procinfo.pidstat.pidstatio import pidstatio_extract_header_line
 from domains.procinfo.pidstat.pidstatmem import pidstatmem_extract_header_line
-from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs
+from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs, parse_dev_mapper
 
 import lazy_details
 from workdir import working_directory
@@ -200,10 +200,17 @@ def extract_sysconfig(work_dir: str) -> dict:
             vgs = parse_vgs()   # [(vg_name, vg_size, vg_free), ...]
             lvs = parse_lvs()   # [(lv_name, vg_name, lv_size, lv_type, ...), ...]
             os.chdir(orig)
+            dev_mapper = parse_dev_mapper(os.path.join(work_dir, 'ls-l-dev-mapper.txt'))
             lvm_data['topology'] = {
                 'pvs': [{'name': p[0], 'vg': p[1], 'size': p[2], 'free': p[3]} for p in pvs],
                 'vgs': [{'name': v[0], 'size': v[1], 'free': v[2]} for v in vgs],
-                'lvs': [{'name': l[0], 'vg': l[1], 'size': l[2], 'type': l[3]} for l in lvs],
+                'lvs': [
+                    {
+                        'name': l[0], 'vg': l[1], 'size': l[2], 'type': l[3],
+                        'device_mapper': dev_mapper.get(f'{l[1]}-{l[0]}'),
+                    }
+                    for l in lvs
+                ],
             }
         except Exception as e:
             log.warning(f'LVM topology parse failed: {e}')

@@ -30,7 +30,7 @@ export interface SysConfigData {
     topology?: {
       pvs: { name: string; vg: string; size: string; free: string }[];
       vgs: { name: string; size: string; free: string }[];
-      lvs: { name: string; vg: string; size: string; type: string }[];
+      lvs: { name: string; vg: string; size: string; type: string; device_mapper?: string }[];
     };
     pvs_raw?: string;
     vgs_raw?: string;

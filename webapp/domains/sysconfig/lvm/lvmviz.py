@@ -52,6 +52,21 @@ def parse_lvs(filename='lvs.txt'):
     return lvs
 
 
+def parse_dev_mapper(filename='ls-l-dev-mapper.txt'):
+    """Map an LVM mapper name (``vg-lv``) to its ``dm-N`` device."""
+    dev_mapper_data = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) < 3 or '->' not in parts:
+                continue
+            mapper_path = parts[-3]
+            dm_number = parts[-1].rsplit('/', 1)[-1]
+            if mapper_path.startswith('/dev/mapper/') and dm_number.startswith('dm-'):
+                dev_mapper_data[mapper_path.rsplit('/', 1)[-1]] = dm_number
+    return dev_mapper_data
+
+
 def create_graph(pvs, vgs, lvs):
     """Legacy function wrapper for backward compatibility."""
     from graphviz import Digraph

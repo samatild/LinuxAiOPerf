@@ -48,7 +48,14 @@ from domains.procperf.memory.top_consumers import extract_top_mem_consumers
 from domains.procinfo.pidstat.pidstatcpu import pidstat_extract_header_line
 from domains.procinfo.pidstat.pidstatio import pidstatio_extract_header_line
 from domains.procinfo.pidstat.pidstatmem import pidstatmem_extract_header_line
-from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs, parse_dev_mapper
+from domains.sysconfig.lvm.lvmviz import (
+    device_mapper_labels,
+    parse_pvs,
+    parse_vgs,
+    parse_lvs,
+    parse_dev_mapper,
+    relabel_iostat_figures,
+)
 
 import lazy_details
 from workdir import working_directory
@@ -248,8 +255,14 @@ def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = Non
     orig = os.getcwd()
     os.chdir(work_dir)
     perf = {}
+    iostat_device_labels = {}
+    if os.path.exists('lvs.txt') and os.path.exists('ls-l-dev-mapper.txt'):
+        try:
+            iostat_device_labels = device_mapper_labels(parse_lvs(), parse_dev_mapper())
+        except Exception as e:
+            log.warning(f'Could not map device-mapper labels for iostat: {e}')
 
-    def run_processor(ptype: str, fname: str, stage_key: str = '', label: str = '') -> list:
+    def run_processor(ptype: str, fname: str, stage_key: str = '', label: str = '', device_labels: dict | None = None) -> list:
         if not os.path.exists(fname):
             return []
         if progress and stage_key:
@@ -258,6 +271,8 @@ def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = Non
             proc = ProcessorFactory.create_processor(ptype, fname)
             _, figs = proc.process()
             result = [fig_to_dict(f) for f in figs]
+            if device_labels:
+                result = relabel_iostat_figures(result, device_labels)
         except Exception as e:
             log.warning(f'{ptype} processor failed: {e}')
             result = []
@@ -274,8 +289,12 @@ def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = Non
         perf['memory'] = {'figures': mem_figs}
 
     disk = {}
-    pd_figs = run_processor('diskiostat', 'iostat-data.out', 'perf_disk_iostat', 'Processing disk I/O per-device')
-    pm_figs = run_processor('diskmetrics', 'iostat-data.out', 'perf_disk_metrics', 'Processing disk I/O per-metric')
+    pd_figs = run_processor(
+        'diskiostat', 'iostat-data.out', 'perf_disk_iostat',
+        'Processing disk I/O per-device', iostat_device_labels)
+    pm_figs = run_processor(
+        'diskmetrics', 'iostat-data.out', 'perf_disk_metrics',
+        'Processing disk I/O per-metric', iostat_device_labels)
     hr_figs = run_processor('diskhighres', 'diskstats_log.txt', 'perf_disk_highres', 'Processing high-resolution disk stats')
     if pd_figs:
         disk['per_device'] = {'figures': pd_figs}

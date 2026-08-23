@@ -4,7 +4,10 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'webapp'))
-from domains.sysconfig.lvm.lvmviz import parse_dev_mapper
+from domains.sysconfig.lvm.lvmviz import (
+    device_mapper_labels,
+    parse_dev_mapper,
+)
 
 
 class DeviceMapperParserTests(unittest.TestCase):
@@ -20,6 +23,23 @@ class DeviceMapperParserTests(unittest.TestCase):
             {
                 'rootvg-rootlv': 'dm-5',
                 'A10_A_datavg-A10_A_datalv': 'dm-7',
+            },
+        )
+
+    def test_labels_dm_devices_with_their_volume_group_and_logical_volume(self):
+        labels = device_mapper_labels(
+            [('rootlv', 'rootvg'), ('data-lv', 'data-vg')],
+            {
+                'rootvg-rootlv': 'dm-5',
+                'data--vg-data--lv': 'dm-7',
+            },
+        )
+
+        self.assertEqual(
+            labels,
+            {
+                'dm-5': 'rootvg/rootlv (dm-5)',
+                'dm-7': 'data-vg/data-lv (dm-7)',
             },
         )
 

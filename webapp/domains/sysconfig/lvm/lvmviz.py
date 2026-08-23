@@ -67,6 +67,39 @@ def parse_dev_mapper(filename='ls-l-dev-mapper.txt'):
     return dev_mapper_data
 
 
+def device_mapper_labels(lvs, dev_mapper_data):
+    """Return ``dm-N`` → human LVM label mappings for chart legends.
+
+    LVM doubles literal dashes in volume-group and logical-volume names in
+    ``/dev/mapper`` paths, so construct the mapper key instead of trying to
+    split it back into two ambiguous names.
+    """
+    labels = {}
+    for lv in lvs:
+        lv_name, vg_name = lv[0], lv[1]
+        mapper_name = f"{vg_name.replace('-', '--')}-{lv_name.replace('-', '--')}"
+        dm_number = dev_mapper_data.get(mapper_name)
+        if dm_number:
+            labels[dm_number] = f"{vg_name}/{lv_name} ({dm_number})"
+    return labels
+
+
+def relabel_iostat_figures(figures, device_labels):
+    """Replace mapped ``dm-N`` labels in iostat chart titles and legends."""
+    if not device_labels:
+        return figures
+    for figure in figures:
+        layout = figure.get('layout', {})
+        title = layout.get('title', {})
+        if isinstance(title, dict) and isinstance(title.get('text'), str):
+            for device, label in device_labels.items():
+                title['text'] = title['text'].replace(f' - {device}', f' - {label}')
+        for trace in figure.get('data', []):
+            if trace.get('name') in device_labels:
+                trace['name'] = device_labels[trace['name']]
+    return figures
+
+
 def create_graph(pvs, vgs, lvs):
     """Legacy function wrapper for backward compatibility."""
     from graphviz import Digraph

@@ -22,6 +22,11 @@ import urllib.parse
 from functools import wraps
 from http.server import BaseHTTPRequestHandler
 
+try:  # package import on Vercel
+    from .async_jobs import AnalysisJobs
+except ImportError:  # top-level import from scripts/serve.py
+    from async_jobs import AnalysisJobs
+
 # ── Path setup ──────────────────────────────────────────────────────────────
 # Vercel's Python runtime doesn't guarantee this file's own directory is on
 # sys.path (unlike local dev / Docker, where api/ ends up importable via
@@ -646,9 +651,11 @@ class ProgressReporter:
 # discussion) rather than the thing that was actually crashing.
 
 REPORT_TTL_SECONDS = int(os.environ.get('REPORT_TTL_SECONDS', 15 * 60))
+LOCAL_ASYNC_ANALYSIS = os.environ.get('LOCAL_ASYNC_ANALYSIS') == '1'
 REPORTS: dict = {}
 _REPORTS_LOCK = threading.Lock()
 _cleanup_started = False
+ASYNC_JOBS = AnalysisJobs()
 
 
 def _prune_work_dir(work_dir: str, sections: dict):
@@ -692,6 +699,60 @@ def _ensure_cleanup_thread():
         t.start()
 
 
+def _run_local_analysis(job_id: str, report_id: str, work_dir: str, weights: dict) -> None:
+    """Run the long pipeline after Azure has returned the upload response.
+
+    This is used only by the persistent container image.  Vercel keeps the
+    synchronous NDJSON route because a serverless invocation cannot own a
+    background thread once its HTTP response has ended.
+    """
+    registered = False
+    try:
+        def emit(percent, message, log_it):
+            ASYNC_JOBS.progress(job_id, percent, message if log_it else None)
+
+        reporter = ProgressReporter(emit, weights)
+        report: dict = {'report_id': report_id}
+        report['metadata'] = extract_metadata(work_dir)
+        reporter.flat(1, 'Reading archive metadata')
+
+        sc = extract_sysconfig(work_dir)
+        if sc:
+            report['sysconfig'] = sc
+        reporter.flat(3, 'Reading system configuration')
+
+        reporter.flat(FLAT_START_PCT, 'Processing performance metrics')
+        perf = extract_performance(work_dir, reporter)
+        if perf:
+            report['performance'] = perf
+
+        activity = extract_process_activity(work_dir, reporter)
+        if activity:
+            report['process_activity'] = activity
+
+        details, sections = extract_process_details(work_dir, reporter)
+        if details:
+            report['process_details'] = details
+        reporter.flat(99, 'Finalizing report')
+
+        _prune_work_dir(work_dir, sections)
+        _ensure_cleanup_thread()
+        with _REPORTS_LOCK:
+            REPORTS[report_id] = {
+                'created': time.time(),
+                'work_dir': work_dir,
+                'sections': sections,
+            }
+        registered = True
+        ASYNC_JOBS.complete(job_id, report)
+    except Exception as exc:
+        log.exception('local async analysis failed')
+        ASYNC_JOBS.fail(job_id, f'Processing failed: {exc}')
+    finally:
+        if not registered:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+
 # ── Vercel handler ────────────────────────────────────────────────────────────
 
 class handler(BaseHTTPRequestHandler):
@@ -728,10 +789,21 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/api/job':
+            self._handle_job_request(parsed)
+            return
         if parsed.path == '/api/chunk':
             self._handle_chunk_request(parsed)
             return
         self._send_json({'error': 'not found'}, 404)
+
+    def _handle_job_request(self, parsed):
+        job_id = urllib.parse.parse_qs(parsed.query).get('job_id', [''])[0]
+        job = ASYNC_JOBS.get(job_id)
+        if not job:
+            self._send_json({'error': 'job not found or lost after a container restart'}, 404)
+            return
+        self._send_json(job)
 
     def _handle_chunk_request(self, parsed):
         qs = urllib.parse.parse_qs(parsed.query)
@@ -799,6 +871,18 @@ class handler(BaseHTTPRequestHandler):
                 shutil.rmtree(sub, ignore_errors=True)
 
             weights = _compute_stage_weights(work_dir)
+
+            if LOCAL_ASYNC_ANALYSIS:
+                job_id = ASYNC_JOBS.start()
+                worker = threading.Thread(
+                    target=_run_local_analysis,
+                    args=(job_id, hex_id, work_dir, weights),
+                    daemon=True,
+                )
+                worker.start()
+                register_job = True
+                self._send_json({'job_id': job_id, 'status': 'processing'}, 202)
+                return
 
             # Stream progress + the final result as newline-delimited JSON
             # (NDJSON) within this single request/response, instead of

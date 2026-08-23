@@ -88,7 +88,7 @@ export default function Upload() {
               className="upload-panel rounded-2xl p-6 sm:p-10"
               style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             >
-              <UploadProgress percent={state.percent} stage={state.stage} log={state.log} />
+              <UploadProgress upload={state.upload} analysis={state.analysis} log={state.log} />
             </div>
           ) : (
             <div

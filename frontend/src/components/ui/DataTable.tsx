@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { TimestampChunksMeta, ChunkResponse } from '../../types/report';
+import { adjacentTimestamp } from '../report/process_details/timestampNavigation';
 
 interface Props {
   reportId: string;
@@ -103,18 +104,40 @@ export default function DataTable({ reportId, section, meta }: Props) {
     <div>
       {/* Controls */}
       <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Timestamp</label>
-          <select
-            value={selectedTs}
-            onChange={e => setSelectedTs(e.target.value)}
-            className="text-sm px-3 py-1.5 rounded-md w-56 focus:outline-none"
-            style={{ ...controlStyle, outlineColor: 'var(--accent)' }}
+        <div className="flex items-end gap-1">
+          <button
+            type="button"
+            onClick={() => setSelectedTs(adjacentTimestamp(timestamps, selectedTs, -1))}
+            disabled={selectedTs === timestamps[0]}
+            aria-label="Previous timestamp"
+            className="text-sm px-2.5 py-1.5 rounded-md disabled:opacity-40"
+            style={controlStyle}
           >
-            {timestamps.map(ts => (
-              <option key={ts} value={ts}>{ts}</option>
-            ))}
-          </select>
+            ←
+          </button>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Timestamp</label>
+            <select
+              value={selectedTs}
+              onChange={e => setSelectedTs(e.target.value)}
+              className="text-sm px-3 py-1.5 rounded-md w-56 focus:outline-none"
+              style={{ ...controlStyle, outlineColor: 'var(--accent)' }}
+            >
+              {timestamps.map(ts => (
+                <option key={ts} value={ts}>{ts}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedTs(adjacentTimestamp(timestamps, selectedTs, 1))}
+            disabled={selectedTs === timestamps[timestamps.length - 1]}
+            aria-label="Next timestamp"
+            className="text-sm px-2.5 py-1.5 rounded-md disabled:opacity-40"
+            style={controlStyle}
+          >
+            →
+          </button>
         </div>
         {cmdIdx >= 0 && (
           <div className="flex flex-col gap-1">

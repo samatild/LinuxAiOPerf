@@ -9,8 +9,10 @@ import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
 import ProcessDetailsTab from '../components/report/process_details/ProcessDetailsTab';
 import AboutTab from '../components/report/AboutTab';
+import OverviewTab from '../components/report/overview/OverviewTab';
 
 const MAIN_TABS = [
+  { id: 'overview',         label: 'Overview' },
   { id: 'sysconfig',        label: 'System Configuration' },
   { id: 'performance',      label: 'System Performance' },
   { id: 'process_activity', label: 'Process Activity' },
@@ -20,7 +22,7 @@ const MAIN_TABS = [
 
 export default function Report() {
   const data = getReportData() as ReportData | null;
-  const [activeTab, setActiveTab] = useState('sysconfig');
+  const [activeTab, setActiveTab] = useState('overview');
 
   if (!data) return <Navigate to="/" replace />;
 
@@ -28,6 +30,7 @@ export default function Report() {
     ...t,
     available: (() => {
       switch (t.id) {
+        case 'overview':         return true;
         case 'sysconfig':        return !!data.sysconfig;
         case 'performance':      return !!data.performance;
         case 'process_activity': return !!data.process_activity;
@@ -79,6 +82,7 @@ export default function Report() {
 
       {/* Tab content */}
       <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
+        {effectiveTab === 'overview' && <OverviewTab data={data} />}
         {effectiveTab === 'sysconfig' && data.sysconfig && (
           <SysConfigTab data={data.sysconfig} />
         )}

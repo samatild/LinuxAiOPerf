@@ -59,6 +59,7 @@ from domains.sysconfig.lvm.lvmviz import (
 
 import lazy_details
 from capture_health import summarize_capture_health
+from storage_capacity import summarize_filesystems
 from workdir import working_directory
 
 logging.basicConfig(level=logging.WARNING)
@@ -194,6 +195,9 @@ def extract_sysconfig(work_dir: str) -> dict:
         if v:
             storage[key] = v
     if storage:
+        capacity = summarize_filesystems(storage.get('df', ''))
+        if capacity:
+            storage['capacity'] = capacity
         sc['storage'] = storage
 
     # LVM — parse topology + raw text; no graphviz needed (diagram rendered in React)

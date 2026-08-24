@@ -25,7 +25,21 @@ export interface ReportMetadata {
 export interface SysConfigData {
   information?: { runtime_info: string; os_release: string };
   hardware?: { lshw: string; dmidecode: string };
-  storage?: { lsscsi?: string; lsblk?: string; df?: string; ls_dev_mapper?: string };
+  storage?: {
+    lsscsi?: string;
+    lsblk?: string;
+    df?: string;
+    ls_dev_mapper?: string;
+    capacity?: {
+      filesystem: string;
+      size: string;
+      used: string;
+      available: string;
+      use_percent: number;
+      mount: string;
+      severity: 'normal' | 'warning' | 'critical';
+    }[];
+  };
   lvm?: {
     topology?: {
       pvs: { name: string; vg: string; size: string; free: string }[];

@@ -15,6 +15,14 @@ describe('selectAuditFigures', () => {
     ]);
   });
 
+  it('places process activity before network at the end of the audit', () => {
+    const selected = selectAuditFigures(
+      { network: { figures: [named('Network rxpck/s')] } },
+      { cpu: { figures: [named('Top 10 Processes — %usr')] } },
+    );
+    expect(selected.map(item => item.section)).toEqual(['Process activity', 'Network']);
+  });
+
   it('includes all process activity figures and excludes raw process details', () => {
     const selected = selectAuditFigures(undefined, {
       cpu: { figures: [named('Top 10 Processes — %usr')] },

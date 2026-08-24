@@ -39,7 +39,7 @@ export function selectAuditFigures(performance?: PerformanceData, processActivit
     ...selectTitles('CPU', performance?.cpu?.figures, CPU_TITLES),
     ...selectTitles('Memory', performance?.memory?.figures, (performance?.memory?.figures ?? []).map(titleOf)),
     ...selectDiskFigures(disk),
-    ...selectTitles('Network', performance?.network?.figures, (performance?.network?.figures ?? []).map(titleOf)),
     ...processFigures.map(figure => ({ section: 'Process activity', title: titleOf(figure), figure })),
+    ...selectTitles('Network', performance?.network?.figures, (performance?.network?.figures ?? []).map(titleOf)),
   ];
 }

@@ -1,18 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { selectAuditFigures } from '../src/components/report/auditExport';
 
-const figure = { data: [], layout: {} };
+const named = (text: string) => ({ data: [], layout: { title: { text } } });
 
 describe('selectAuditFigures', () => {
-  it('chooses one representative chart for each performance domain', () => {
+  it('selects the requested CPU and disk audit charts by metric title', () => {
     const selected = selectAuditFigures({
-      cpu: { figures: [figure] }, memory: { figures: [figure] },
-      disk: { per_metric: { figures: [figure] } }, network: { figures: [figure] },
+      cpu: { figures: ['All CPU Usage Data', '%usr - CPU Usage Data', '%sys - CPU Usage Data', '%iowait - CPU Usage Data', '%idle - CPU Usage Data', '%nice - CPU Usage Data'].map(named) },
+      disk: { per_metric: { figures: ['Disk r/s - All Devices', 'Disk w/s - All Devices', 'Disk rkB/s - All Devices', 'Disk wkB/s - All Devices', 'Disk aqu-sz - All Devices', 'Disk r_await - All Devices', 'Disk w_await - All Devices', 'Disk %util - All Devices'].map(named) } },
     });
-    expect(selected.map(item => item.section)).toEqual(['CPU', 'Memory', 'Disk', 'Network']);
+    expect(selected.map(item => item.title)).toEqual([
+      'All CPU Usage Data', '%usr - CPU Usage Data', '%sys - CPU Usage Data', '%iowait - CPU Usage Data', '%idle - CPU Usage Data',
+      'Disk r/s - All Devices', 'Disk w/s - All Devices', 'Disk rkB/s - All Devices', 'Disk wkB/s - All Devices', 'Disk aqu-sz - All Devices', 'Disk r_await - All Devices', 'Disk w_await - All Devices',
+    ]);
   });
 
-  it('does not export any chart when performance data is absent', () => {
-    expect(selectAuditFigures()).toEqual([]);
+  it('includes all process activity figures and excludes raw process details', () => {
+    const selected = selectAuditFigures(undefined, {
+      cpu: { figures: [named('Top 10 Processes — %usr')] },
+      io: { figures: [named('Top 10 Processes — kB_rd/s')] },
+      memory: { figures: [named('Top 10 Processes — RSS (MB)')] },
+    });
+    expect(selected.map(item => item.section)).toEqual(['Process activity', 'Process activity', 'Process activity']);
   });
 });

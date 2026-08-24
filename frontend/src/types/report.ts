@@ -20,6 +20,9 @@ export interface ReportMetadata {
   kernel?: string;
   cpu_model?: string;
   collection_date?: string;
+  capture_start?: string;
+  capture_end?: string;
+  runtime?: string;
 }
 
 export interface SysConfigData {

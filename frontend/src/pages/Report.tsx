@@ -45,7 +45,7 @@ export default function Report() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
-      <Header metadata={data.metadata} showBack showCounters />
+      <Header metadata={data.metadata} showBack showCounters actions={data.performance ? <AuditExportButton data={data} /> : undefined} />
 
       {/* Main tab bar */}
       <div className="sticky top-[57px] z-40" style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>
@@ -80,7 +80,6 @@ export default function Report() {
 
       {/* Tab content */}
       <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
-        {data.performance && <div className="flex justify-end mb-4"><AuditExportButton data={data} /></div>}
         {effectiveTab === 'sysconfig' && data.sysconfig && (
           <SysConfigTab data={data.sysconfig} captureHealth={data.capture_health} />
         )}

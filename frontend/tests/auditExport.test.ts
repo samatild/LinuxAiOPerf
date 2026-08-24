@@ -9,9 +9,9 @@ describe('selectAuditFigures', () => {
       cpu: { figures: ['All CPU Usage Data', '%usr - CPU Usage Data', '%sys - CPU Usage Data', '%iowait - CPU Usage Data', '%idle - CPU Usage Data', '%nice - CPU Usage Data'].map(named) },
       disk: { per_metric: { figures: ['Disk r/s - All Devices', 'Disk w/s - All Devices', 'Disk rkB/s - All Devices', 'Disk wkB/s - All Devices', 'Disk aqu-sz - All Devices', 'Disk r_await - All Devices', 'Disk w_await - All Devices', 'Disk %util - All Devices'].map(named) } },
     });
-    expect(selected.map(item => item.title)).toEqual([
-      'All CPU Usage Data', '%usr - CPU Usage Data', '%sys - CPU Usage Data', '%iowait - CPU Usage Data', '%idle - CPU Usage Data',
-      'Disk r/s - All Devices', 'Disk w/s - All Devices', 'Disk rkB/s - All Devices', 'Disk wkB/s - All Devices', 'Disk aqu-sz - All Devices', 'Disk r_await - All Devices', 'Disk w_await - All Devices',
+    expect(selected.map(item => item.section)).toEqual([
+      'CPU', 'CPU', 'CPU', 'CPU', 'CPU',
+      'Disk · IOPS', 'Disk · IOPS', 'Disk · Bandwidth', 'Disk · Bandwidth', 'Disk · Queue depth', 'Disk · Latency', 'Disk · Latency',
     ]);
   });
 

@@ -9,6 +9,7 @@ import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
 import ProcessDetailsTab from '../components/report/process_details/ProcessDetailsTab';
 import AboutTab from '../components/report/AboutTab';
+import AuditExportButton from '../components/report/AuditExportButton';
 
 const MAIN_TABS = [
   { id: 'sysconfig',        label: 'System Configuration' },
@@ -44,7 +45,7 @@ export default function Report() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
-      <Header metadata={data.metadata} showBack showCounters />
+      <Header metadata={data.metadata} showBack showCounters actions={data.performance ? <AuditExportButton data={data} /> : undefined} />
 
       {/* Main tab bar */}
       <div className="sticky top-[57px] z-40" style={{ background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>

@@ -60,6 +60,7 @@ from domains.sysconfig.lvm.lvmviz import (
 import lazy_details
 from capture_health import summarize_capture_health
 from storage_capacity import summarize_filesystems
+from report_metadata import extract_metadata as extract_report_metadata
 from workdir import working_directory
 
 logging.basicConfig(level=logging.WARNING)
@@ -129,39 +130,7 @@ def parse_cgi_multipart(handler):
 # ── Metadata ─────────────────────────────────────────────────────────────────
 
 def extract_metadata(work_dir: str) -> dict:
-    meta = {}
-
-    info = read_safe(os.path.join(work_dir, 'info.txt'))
-    if info:
-        for line in info.splitlines():
-            low = line.lower()
-            if 'hostname' in low or 'host:' in low:
-                parts = line.split(':', 1)
-                if len(parts) > 1 and 'hostname' not in meta:
-                    meta['hostname'] = parts[1].strip()
-            if re.search(r'\d{4}-\d{2}-\d{2}', line) and 'collection_date' not in meta:
-                m = re.search(r'\d{4}-\d{2}-\d{2}', line)
-                if m:
-                    meta['collection_date'] = m.group(0)
-            if 'kernel' in low and 'kernel' not in meta:
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    meta['kernel'] = parts[1].strip()
-
-    os_rel = read_safe(os.path.join(work_dir, 'os-release'))
-    for line in os_rel.splitlines():
-        if line.startswith('PRETTY_NAME='):
-            meta['os'] = line.split('=', 1)[1].strip().strip('"')
-
-    lscpu = read_safe(os.path.join(work_dir, 'lscpu.txt'))
-    for line in lscpu.splitlines():
-        if line.startswith('Model name'):
-            parts = line.split(':', 1)
-            if len(parts) > 1:
-                meta['cpu_model'] = parts[1].strip()
-                break
-
-    return meta
+    return extract_report_metadata(work_dir)
 
 
 def extract_capture_health(work_dir: str) -> dict:

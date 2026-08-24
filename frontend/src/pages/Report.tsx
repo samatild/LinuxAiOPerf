@@ -80,7 +80,7 @@ export default function Report() {
       {/* Tab content */}
       <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
         {effectiveTab === 'sysconfig' && data.sysconfig && (
-          <SysConfigTab data={data.sysconfig} />
+          <SysConfigTab data={data.sysconfig} captureHealth={data.capture_health} />
         )}
         {effectiveTab === 'performance' && data.performance && (
           <PerformanceTab data={data.performance} />

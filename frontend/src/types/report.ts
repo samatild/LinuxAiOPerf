@@ -71,9 +71,17 @@ export interface ProcessDetailsData {
   iotop?: TimestampChunksMeta;
 }
 
+export interface CaptureHealth {
+  cpu_count?: number;
+  peak_normalized_load_1m?: number;
+  min_available_memory_bytes?: number;
+  peak_swap_used_bytes?: number;
+}
+
 export interface ReportData {
   report_id: string;
   metadata: ReportMetadata;
+  capture_health?: CaptureHealth;
   sysconfig?: SysConfigData;
   performance?: PerformanceData;
   process_activity?: ProcessActivityData;

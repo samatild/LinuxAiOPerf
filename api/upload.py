@@ -58,6 +58,7 @@ from domains.sysconfig.lvm.lvmviz import (
 )
 
 import lazy_details
+from capture_health import summarize_capture_health
 from workdir import working_directory
 
 logging.basicConfig(level=logging.WARNING)
@@ -160,6 +161,14 @@ def extract_metadata(work_dir: str) -> dict:
                 break
 
     return meta
+
+
+def extract_capture_health(work_dir: str) -> dict:
+    return summarize_capture_health(
+        read_safe(os.path.join(work_dir, 'lscpu.txt')),
+        read_safe(os.path.join(work_dir, 'sar-load-avg.txt')),
+        read_safe(os.path.join(work_dir, 'meminfo.txt')),
+    )
 
 
 # ── System Configuration ─────────────────────────────────────────────────────
@@ -741,6 +750,9 @@ def _run_local_analysis(job_id: str, report_id: str, work_dir: str, weights: dic
         reporter = ProgressReporter(emit, weights)
         report: dict = {'report_id': report_id}
         report['metadata'] = extract_metadata(work_dir)
+        capture_health = extract_capture_health(work_dir)
+        if capture_health:
+            report['capture_health'] = capture_health
         reporter.flat(1, 'Reading archive metadata')
 
         sc = extract_sysconfig(work_dir)
@@ -946,6 +958,9 @@ class handler(BaseHTTPRequestHandler):
 
             report: dict = {'report_id': hex_id}
             report['metadata'] = extract_metadata(work_dir)
+            capture_health = extract_capture_health(work_dir)
+            if capture_health:
+                report['capture_health'] = capture_health
 
             reporter.flat(1, 'Reading archive metadata')
 

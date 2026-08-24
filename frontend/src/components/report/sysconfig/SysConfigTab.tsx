@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import type { SysConfigData } from '../../../types/report';
+import type { CaptureHealth, SysConfigData } from '../../../types/report';
+import CaptureHealthPanel from '../CaptureHealthPanel';
 import SubTabBar from '../../ui/SubTabBar';
 import TextBlock from '../../ui/TextBlock';
 import LvmDiagram from './LvmDiagram';
 
-interface Props { data: SysConfigData; }
+interface Props {
+  data: SysConfigData;
+  captureHealth?: CaptureHealth;
+}
 
 const SUBTABS = [
   { id: 'information', label: 'Information' },
@@ -18,7 +22,7 @@ const SUBTABS = [
   { id: 'security',    label: 'Security' },
 ];
 
-export default function SysConfigTab({ data }: Props) {
+export default function SysConfigTab({ data, captureHealth }: Props) {
   const [sub, setSub] = useState('information');
 
   const available = SUBTABS.map(t => ({
@@ -51,6 +55,7 @@ export default function SysConfigTab({ data }: Props) {
         {activeSub === 'information' && (
           <>
             <TextBlock label="Runtime Information" content={data.information?.runtime_info} />
+            {captureHealth && <CaptureHealthPanel data={captureHealth} />}
             <TextBlock label="OS Release" content={data.information?.os_release} />
           </>
         )}

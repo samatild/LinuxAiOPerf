@@ -59,6 +59,29 @@ def inject_script_version(version):
     print(f"✓ Updated script version to {version}")
 
 
+def inject_readme_version(version, project_root=None):
+    """Update the README Latest Release badge without changing its link or style."""
+    root = project_root or Path(__file__).parent.parent
+    readme_path = root / "README.md"
+    if not readme_path.exists():
+        raise FileNotFoundError(f"README file not found at {readme_path}")
+
+    content = readme_path.read_text()
+    updated, replacements = re.subn(
+        r'(https://img\.shields\.io/badge/release-v)(?:VERSION_PLACEHOLDER|\d+\.\d+\.\d+)(-[^/]+\.svg)',
+        rf'\g<1>{version}\g<2>',
+        content,
+        count=1,
+    )
+    if replacements != 1:
+        raise ValueError(
+            f"Latest Release badge not found in {readme_path}; README was not changed"
+        )
+
+    readme_path.write_text(updated)
+    print(f"✓ Updated README Latest Release badge to v{version}")
+
+
 def inject_webapp_version(version):
     """Inject version into webapp and frontend components."""
     project_root = Path(__file__).parent.parent
@@ -202,6 +225,16 @@ def check_versions(version):
         else:
             print(f"✓ frontend/src/version.ts version correct: {version}")
 
+    readme_path = Path(__file__).parent.parent / "README.md"
+    if not readme_path.exists():
+        print(f"❌ README not found at {readme_path}")
+        all_correct = False
+    elif f"release-v{version}-" not in readme_path.read_text():
+        print(f"❌ README release badge mismatch. Expected: v{version}")
+        all_correct = False
+    else:
+        print(f"✓ README release badge correct: v{version}")
+
     print("=" * 50)
     return all_correct
 
@@ -255,6 +288,7 @@ def main():
                 print(f"Injecting version {new_version} into components...")
                 inject_script_version(new_version)
                 inject_webapp_version(new_version)
+                inject_readme_version(new_version)
                 print("✓ Version update and injection completed!")
 
             elif choice == "3":

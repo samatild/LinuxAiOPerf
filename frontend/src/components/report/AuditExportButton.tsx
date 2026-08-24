@@ -12,8 +12,9 @@ function gib(value?: number) {
 }
 
 function printDocument(data: ReportData, charts: { section: string; source: string }[]) {
-  const popup = window.open('', '_blank', 'noopener,noreferrer');
+  const popup = window.open('', '_blank');
   if (!popup) throw new Error('Popup blocked. Allow popups to export the audit PDF.');
+  popup.opener = null;
   const meta = data.metadata;
   const health = data.capture_health;
   const capacity = data.sysconfig?.storage?.capacity ?? [];

@@ -9,6 +9,7 @@ import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
 import ProcessDetailsTab from '../components/report/process_details/ProcessDetailsTab';
 import AboutTab from '../components/report/AboutTab';
+import AuditExportButton from '../components/report/AuditExportButton';
 
 const MAIN_TABS = [
   { id: 'sysconfig',        label: 'System Configuration' },
@@ -79,6 +80,7 @@ export default function Report() {
 
       {/* Tab content */}
       <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
+        {data.performance && <div className="flex justify-end mb-4"><AuditExportButton data={data} /></div>}
         {effectiveTab === 'sysconfig' && data.sysconfig && (
           <SysConfigTab data={data.sysconfig} captureHealth={data.capture_health} />
         )}

@@ -9,7 +9,6 @@ import PerformanceTab from '../components/report/performance/PerformanceTab';
 import ProcessActivityTab from '../components/report/process_activity/ProcessActivityTab';
 import ProcessDetailsTab from '../components/report/process_details/ProcessDetailsTab';
 import AboutTab from '../components/report/AboutTab';
-import CaptureHealthPanel from '../components/report/CaptureHealthPanel';
 
 const MAIN_TABS = [
   { id: 'sysconfig',        label: 'System Configuration' },
@@ -80,9 +79,8 @@ export default function Report() {
 
       {/* Tab content */}
       <main className="flex-1 w-[80%] max-w-[1600px] mx-auto w-full px-6 py-6">
-        {effectiveTab === 'sysconfig' && data.capture_health && <CaptureHealthPanel data={data.capture_health} />}
         {effectiveTab === 'sysconfig' && data.sysconfig && (
-          <SysConfigTab data={data.sysconfig} />
+          <SysConfigTab data={data.sysconfig} captureHealth={data.capture_health} />
         )}
         {effectiveTab === 'performance' && data.performance && (
           <PerformanceTab data={data.performance} />

@@ -12,7 +12,7 @@ function escapeHtml(value: unknown) {
   return String(value ?? '—').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]!));
 }
 function gib(value?: number) { return value === undefined ? '—' : `${(value / 1024 ** 3).toFixed(2)} GiB`; }
-function noteHtml(notes: Notes, section: string) { return notes[section]?.trim() ? `<p class="note"><b>Note</b>${escapeHtml(notes[section].trim())}</p>` : ''; }
+function noteHtml(notes: Notes, section: string) { return notes[section]?.trim() ? `<p class="note"><b>Obs:</b>${escapeHtml(notes[section].trim())}</p>` : ''; }
 function rows(rows: string[][]) { return rows.map(row => `<tr>${row.map(value => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`).join(''); }
 function table(headers: string[], body: string[][]) { return `<table><thead><tr>${headers.map(value => `<th>${escapeHtml(value)}</th>`).join('')}</tr></thead><tbody>${rows(body)}</tbody></table>`; }
 

@@ -19,7 +19,13 @@ import gzip
 import threading
 import time
 import urllib.parse
+from functools import wraps
 from http.server import BaseHTTPRequestHandler
+
+try:  # package import on Vercel
+    from .async_jobs import AnalysisJobs
+except ImportError:  # top-level import from scripts/serve.py
+    from async_jobs import AnalysisJobs
 
 # ── Path setup ──────────────────────────────────────────────────────────────
 # Vercel's Python runtime doesn't guarantee this file's own directory is on
@@ -27,11 +33,13 @@ from http.server import BaseHTTPRequestHandler
 # other means) — add it explicitly so sibling modules like lazy_details can
 # be imported below.
 API_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT = os.path.abspath(os.path.join(API_DIR, '..'))
 sys.path.insert(0, API_DIR)
 WEBAPP_DIR = os.path.join(API_DIR, '..', 'webapp')
 sys.path.insert(0, WEBAPP_DIR)
 
 import plotly.io as pio
+import orjson
 
 from domains.factory import ProcessorFactory
 from domains.procperf.cpu.top_consumers import extract_top_cpu_consumers
@@ -40,12 +48,32 @@ from domains.procperf.memory.top_consumers import extract_top_mem_consumers
 from domains.procinfo.pidstat.pidstatcpu import pidstat_extract_header_line
 from domains.procinfo.pidstat.pidstatio import pidstatio_extract_header_line
 from domains.procinfo.pidstat.pidstatmem import pidstatmem_extract_header_line
-from domains.sysconfig.lvm.lvmviz import parse_pvs, parse_vgs, parse_lvs
+from domains.sysconfig.lvm.lvmviz import (
+    device_mapper_labels,
+    parse_pvs,
+    parse_vgs,
+    parse_lvs,
+    parse_dev_mapper,
+    relabel_iostat_figures,
+)
 
 import lazy_details
+from capture_health import summarize_capture_health
+from storage_capacity import summarize_filesystems
+from report_metadata import extract_metadata as extract_report_metadata
+from workdir import working_directory
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('api.upload')
+
+
+def _in_upload_work_dir(function):
+    """Serialize processors that require relative paths inside an upload."""
+    @wraps(function)
+    def wrapped(work_dir, *args, **kwargs):
+        with working_directory(work_dir, restore_to=APP_ROOT):
+            return function(work_dir, *args, **kwargs)
+    return wrapped
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -102,43 +130,20 @@ def parse_cgi_multipart(handler):
 # ── Metadata ─────────────────────────────────────────────────────────────────
 
 def extract_metadata(work_dir: str) -> dict:
-    meta = {}
+    return extract_report_metadata(work_dir)
 
-    info = read_safe(os.path.join(work_dir, 'info.txt'))
-    if info:
-        for line in info.splitlines():
-            low = line.lower()
-            if 'hostname' in low or 'host:' in low:
-                parts = line.split(':', 1)
-                if len(parts) > 1 and 'hostname' not in meta:
-                    meta['hostname'] = parts[1].strip()
-            if re.search(r'\d{4}-\d{2}-\d{2}', line) and 'collection_date' not in meta:
-                m = re.search(r'\d{4}-\d{2}-\d{2}', line)
-                if m:
-                    meta['collection_date'] = m.group(0)
-            if 'kernel' in low and 'kernel' not in meta:
-                parts = line.split(':', 1)
-                if len(parts) > 1:
-                    meta['kernel'] = parts[1].strip()
 
-    os_rel = read_safe(os.path.join(work_dir, 'os-release'))
-    for line in os_rel.splitlines():
-        if line.startswith('PRETTY_NAME='):
-            meta['os'] = line.split('=', 1)[1].strip().strip('"')
-
-    lscpu = read_safe(os.path.join(work_dir, 'lscpu.txt'))
-    for line in lscpu.splitlines():
-        if line.startswith('Model name'):
-            parts = line.split(':', 1)
-            if len(parts) > 1:
-                meta['cpu_model'] = parts[1].strip()
-                break
-
-    return meta
+def extract_capture_health(work_dir: str) -> dict:
+    return summarize_capture_health(
+        read_safe(os.path.join(work_dir, 'lscpu.txt')),
+        read_safe(os.path.join(work_dir, 'sar-load-avg.txt')),
+        read_safe(os.path.join(work_dir, 'meminfo.txt')),
+    )
 
 
 # ── System Configuration ─────────────────────────────────────────────────────
 
+@_in_upload_work_dir
 def extract_sysconfig(work_dir: str) -> dict:
     sc = {}
 
@@ -159,6 +164,9 @@ def extract_sysconfig(work_dir: str) -> dict:
         if v:
             storage[key] = v
     if storage:
+        capacity = summarize_filesystems(storage.get('df', ''))
+        if capacity:
+            storage['capacity'] = capacity
         sc['storage'] = storage
 
     # LVM — parse topology + raw text; no graphviz needed (diagram rendered in React)
@@ -181,10 +189,17 @@ def extract_sysconfig(work_dir: str) -> dict:
             vgs = parse_vgs()   # [(vg_name, vg_size, vg_free), ...]
             lvs = parse_lvs()   # [(lv_name, vg_name, lv_size, lv_type, ...), ...]
             os.chdir(orig)
+            dev_mapper = parse_dev_mapper(os.path.join(work_dir, 'ls-l-dev-mapper.txt'))
             lvm_data['topology'] = {
                 'pvs': [{'name': p[0], 'vg': p[1], 'size': p[2], 'free': p[3]} for p in pvs],
                 'vgs': [{'name': v[0], 'size': v[1], 'free': v[2]} for v in vgs],
-                'lvs': [{'name': l[0], 'vg': l[1], 'size': l[2], 'type': l[3]} for l in lvs],
+                'lvs': [
+                    {
+                        'name': l[0], 'vg': l[1], 'size': l[2], 'type': l[3],
+                        'device_mapper': dev_mapper.get(f'{l[1]}-{l[0]}'),
+                    }
+                    for l in lvs
+                ],
             }
         except Exception as e:
             log.warning(f'LVM topology parse failed: {e}')
@@ -217,12 +232,19 @@ def extract_sysconfig(work_dir: str) -> dict:
 
 # ── Performance (time-series charts) ─────────────────────────────────────────
 
+@_in_upload_work_dir
 def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = None) -> dict:
     orig = os.getcwd()
     os.chdir(work_dir)
     perf = {}
+    iostat_device_labels = {}
+    if os.path.exists('lvs.txt') and os.path.exists('ls-l-dev-mapper.txt'):
+        try:
+            iostat_device_labels = device_mapper_labels(parse_lvs(), parse_dev_mapper())
+        except Exception as e:
+            log.warning(f'Could not map device-mapper labels for iostat: {e}')
 
-    def run_processor(ptype: str, fname: str, stage_key: str = '', label: str = '') -> list:
+    def run_processor(ptype: str, fname: str, stage_key: str = '', label: str = '', device_labels: dict | None = None) -> list:
         if not os.path.exists(fname):
             return []
         if progress and stage_key:
@@ -231,6 +253,8 @@ def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = Non
             proc = ProcessorFactory.create_processor(ptype, fname)
             _, figs = proc.process()
             result = [fig_to_dict(f) for f in figs]
+            if device_labels:
+                result = relabel_iostat_figures(result, device_labels)
         except Exception as e:
             log.warning(f'{ptype} processor failed: {e}')
             result = []
@@ -247,8 +271,12 @@ def extract_performance(work_dir: str, progress: 'ProgressReporter | None' = Non
         perf['memory'] = {'figures': mem_figs}
 
     disk = {}
-    pd_figs = run_processor('diskiostat', 'iostat-data.out', 'perf_disk_iostat', 'Processing disk I/O per-device')
-    pm_figs = run_processor('diskmetrics', 'iostat-data.out', 'perf_disk_metrics', 'Processing disk I/O per-metric')
+    pd_figs = run_processor(
+        'diskiostat', 'iostat-data.out', 'perf_disk_iostat',
+        'Processing disk I/O per-device', iostat_device_labels)
+    pm_figs = run_processor(
+        'diskmetrics', 'iostat-data.out', 'perf_disk_metrics',
+        'Processing disk I/O per-metric', iostat_device_labels)
     hr_figs = run_processor('diskhighres', 'diskstats_log.txt', 'perf_disk_highres', 'Processing high-resolution disk stats')
     if pd_figs:
         disk['per_device'] = {'figures': pd_figs}
@@ -298,6 +326,7 @@ def _top_consumers_to_figs(data: dict, metric_keys: list[tuple[str, str]]) -> li
     return figs
 
 
+@_in_upload_work_dir
 def extract_process_activity(work_dir: str, progress: 'ProgressReporter | None' = None) -> dict:
     orig = os.getcwd()
     os.chdir(work_dir)
@@ -631,9 +660,11 @@ class ProgressReporter:
 # discussion) rather than the thing that was actually crashing.
 
 REPORT_TTL_SECONDS = int(os.environ.get('REPORT_TTL_SECONDS', 15 * 60))
+LOCAL_ASYNC_ANALYSIS = os.environ.get('LOCAL_ASYNC_ANALYSIS') == '1'
 REPORTS: dict = {}
 _REPORTS_LOCK = threading.Lock()
 _cleanup_started = False
+ASYNC_JOBS = AnalysisJobs()
 
 
 def _prune_work_dir(work_dir: str, sections: dict):
@@ -677,6 +708,63 @@ def _ensure_cleanup_thread():
         t.start()
 
 
+def _run_local_analysis(job_id: str, report_id: str, work_dir: str, weights: dict) -> None:
+    """Run the long pipeline after Azure has returned the upload response.
+
+    This is used only by the persistent container image.  Vercel keeps the
+    synchronous NDJSON route because a serverless invocation cannot own a
+    background thread once its HTTP response has ended.
+    """
+    registered = False
+    try:
+        def emit(percent, message, log_it):
+            ASYNC_JOBS.progress(job_id, percent, message if log_it else None)
+
+        reporter = ProgressReporter(emit, weights)
+        report: dict = {'report_id': report_id}
+        report['metadata'] = extract_metadata(work_dir)
+        capture_health = extract_capture_health(work_dir)
+        if capture_health:
+            report['capture_health'] = capture_health
+        reporter.flat(1, 'Reading archive metadata')
+
+        sc = extract_sysconfig(work_dir)
+        if sc:
+            report['sysconfig'] = sc
+        reporter.flat(3, 'Reading system configuration')
+
+        reporter.flat(FLAT_START_PCT, 'Processing performance metrics')
+        perf = extract_performance(work_dir, reporter)
+        if perf:
+            report['performance'] = perf
+
+        activity = extract_process_activity(work_dir, reporter)
+        if activity:
+            report['process_activity'] = activity
+
+        details, sections = extract_process_details(work_dir, reporter)
+        if details:
+            report['process_details'] = details
+        reporter.flat(99, 'Finalizing report')
+
+        _prune_work_dir(work_dir, sections)
+        _ensure_cleanup_thread()
+        with _REPORTS_LOCK:
+            REPORTS[report_id] = {
+                'created': time.time(),
+                'work_dir': work_dir,
+                'sections': sections,
+            }
+        registered = True
+        ASYNC_JOBS.complete(job_id, report)
+    except Exception as exc:
+        log.exception('local async analysis failed')
+        ASYNC_JOBS.fail(job_id, f'Processing failed: {exc}')
+    finally:
+        if not registered:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+
 # ── Vercel handler ────────────────────────────────────────────────────────────
 
 class handler(BaseHTTPRequestHandler):
@@ -688,7 +776,10 @@ class handler(BaseHTTPRequestHandler):
         pass
 
     def _send_json(self, data, status=200):
-        body = json.dumps(data).encode('utf-8')
+        # The complete large report is several hundred MB.  orjson serializes
+        # it faster than the stdlib and directly supports NumPy values emitted
+        # by Plotly, while preserving the JSON HTTP contract.
+        body = orjson.dumps(data, option=orjson.OPT_SERIALIZE_NUMPY)
         headers = {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
 
         accepts_gzip = 'gzip' in self.headers.get('Accept-Encoding', '')
@@ -713,10 +804,21 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/api/job':
+            self._handle_job_request(parsed)
+            return
         if parsed.path == '/api/chunk':
             self._handle_chunk_request(parsed)
             return
         self._send_json({'error': 'not found'}, 404)
+
+    def _handle_job_request(self, parsed):
+        job_id = urllib.parse.parse_qs(parsed.query).get('job_id', [''])[0]
+        job = ASYNC_JOBS.get(job_id)
+        if not job:
+            self._send_json({'error': 'job not found or lost after a container restart'}, 404)
+            return
+        self._send_json(job)
 
     def _handle_chunk_request(self, parsed):
         qs = urllib.parse.parse_qs(parsed.query)
@@ -785,6 +887,18 @@ class handler(BaseHTTPRequestHandler):
 
             weights = _compute_stage_weights(work_dir)
 
+            if LOCAL_ASYNC_ANALYSIS:
+                job_id = ASYNC_JOBS.start()
+                worker = threading.Thread(
+                    target=_run_local_analysis,
+                    args=(job_id, hex_id, work_dir, weights),
+                    daemon=True,
+                )
+                worker.start()
+                register_job = True
+                self._send_json({'job_id': job_id, 'status': 'processing'}, 202)
+                return
+
             # Stream progress + the final result as newline-delimited JSON
             # (NDJSON) within this single request/response, instead of
             # returning immediately and handing the work off to a background
@@ -817,6 +931,9 @@ class handler(BaseHTTPRequestHandler):
 
             report: dict = {'report_id': hex_id}
             report['metadata'] = extract_metadata(work_dir)
+            capture_health = extract_capture_health(work_dir)
+            if capture_health:
+                report['capture_health'] = capture_health
 
             reporter.flat(1, 'Reading archive metadata')
 

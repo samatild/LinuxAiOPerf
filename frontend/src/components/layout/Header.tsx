@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import type { ReportMetadata } from '../../types/report';
@@ -10,6 +11,7 @@ interface Props {
   metadata?: ReportMetadata;
   showBack?: boolean;
   showCounters?: boolean;
+  actions?: ReactNode;
 }
 
 function SystemIdentity({ metadata }: { metadata: ReportMetadata }) {
@@ -60,7 +62,7 @@ function ThemeToggle() {
   );
 }
 
-export default function Header({ metadata, showBack, showCounters }: Props) {
+export default function Header({ metadata, showBack, showCounters, actions }: Props) {
   return (
     <header
       className="sticky top-0 z-50 px-6 py-3"
@@ -97,6 +99,7 @@ export default function Header({ metadata, showBack, showCounters }: Props) {
           {showBack && (
             <KofiButton compact />
           )}
+          {actions}
           <ThemeToggle />
           {showBack && (
             <Link

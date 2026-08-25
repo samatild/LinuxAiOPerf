@@ -1,90 +1,154 @@
 import { useState } from 'react';
 import type { ReportData } from '../types/report';
+import { uploadMetrics } from '../components/upload/uploadMetrics';
 
 export interface LogLine {
   ts: number;
   message: string;
 }
 
+export interface TransferProgress {
+  percent: number;
+  loaded: number;
+  total: number;
+  bytesPerSecond: number;
+  etaSeconds: number | null;
+}
+
+export interface AnalysisProgress {
+  percent: number;
+  stage: string;
+}
+
 type UploadState =
   | { status: 'idle' }
-  | { status: 'uploading'; percent: number; stage: string; log: LogLine[] }
+  | { status: 'uploading'; upload: TransferProgress; analysis: AnalysisProgress; log: LogLine[] }
   | { status: 'done'; data: ReportData }
   | { status: 'error'; message: string };
 
-// The full response body is a single request that streams newline-delimited
-// JSON (NDJSON) progress lines, ending with a final line containing the full
-// report (or an error). This avoids depending on server-side state surviving
-// across two separate HTTP requests (upload + poll), which isn't guaranteed
-// on serverless platforms like Vercel — see issue #88.
+const initialTransfer: TransferProgress = {
+  percent: 0, loaded: 0, total: 0, bytesPerSecond: 0, etaSeconds: null,
+};
+
 export function useUpload() {
   const [state, setState] = useState<UploadState>({ status: 'idle' });
 
-  async function upload(file: File) {
-    setState({ status: 'uploading', percent: 0, stage: 'Uploading archive…', log: [] });
-    const form = new FormData();
-    form.append('file', file);
+  function updateAnalysis(percent: number | undefined, stage: string | undefined, log: LogLine[]) {
+    setState((previous) => {
+      if (previous.status !== 'uploading') return previous;
+      const nextLog = stage && log.at(-1)?.message !== stage
+        ? [...log, { ts: Date.now(), message: stage }]
+        : log;
+      return {
+        ...previous,
+        analysis: {
+          percent: percent ?? previous.analysis.percent,
+          stage: stage ?? previous.analysis.stage,
+        },
+        log: nextLog,
+      };
+    });
+  }
 
-    let log: LogLine[] = [];
-
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: form });
-      if (!res.ok || !res.body) {
-        let message = `HTTP ${res.status}`;
-        try {
-          const json = await res.json();
-          message = json.error ?? message;
-        } catch {
-          // response wasn't JSON (e.g. platform error page) — keep the HTTP status message
-        }
-        setState({ status: 'error', message });
+  async function waitForLocalJob(jobId: string, log: LogLine[]) {
+    while (true) {
+      await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      const response = await fetch(`/api/job?job_id=${encodeURIComponent(jobId)}`);
+      const job = await response.json();
+      if (!response.ok || job.error) {
+        setState({ status: 'error', message: job.error ?? `HTTP ${response.status}` });
         return;
       }
+      if (job.stage && log.at(-1)?.message !== job.stage) {
+        log = [...log, { ts: Date.now(), message: job.stage }];
+      }
+      updateAnalysis(job.percent, job.stage, log);
+      if (job.status === 'done') {
+        setState({ status: 'done', data: job.result });
+        return;
+      }
+    }
+  }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+  function upload(file: File) {
+    let log: LogLine[] = [];
+    let responseOffset = 0;
+    let responseBuffer = '';
+    let finalResult: ReportData | null = null;
+    const startedAt = performance.now();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+    setState({
+      status: 'uploading',
+      upload: { ...initialTransfer, total: file.size },
+      analysis: { percent: 0, stage: 'Waiting for upload to finish…' },
+      log,
+    });
 
-        let newlineIdx: number;
-        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
-          const line = buffer.slice(0, newlineIdx).trim();
-          buffer = buffer.slice(newlineIdx + 1);
-          if (!line) continue;
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
 
-          let json: any;
-          try {
-            json = JSON.parse(line);
-          } catch {
-            continue; // ignore malformed/partial line, shouldn't normally happen
-          }
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      const metrics = uploadMetrics(event.loaded, event.total, startedAt, performance.now());
+      setState((previous) => previous.status === 'uploading' ? {
+        ...previous,
+        upload: { loaded: event.loaded, total: event.total, ...metrics },
+      } : previous);
+    };
 
-          if (json.error) {
-            setState({ status: 'error', message: json.error });
+    const consumeLines = (flush = false) => {
+      responseBuffer += xhr.responseText.slice(responseOffset);
+      responseOffset = xhr.responseText.length;
+      const lines = responseBuffer.split('\n');
+      responseBuffer = flush ? '' : (lines.pop() ?? '');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const data = JSON.parse(line);
+          if (data.error) {
+            setState({ status: 'error', message: data.error });
             return;
           }
-          if (json.result) {
-            setState({ status: 'done', data: json.result });
+          if (data.result) {
+            finalResult = data.result;
             return;
           }
-          if (json.log) {
-            log = [...log, { ts: Date.now(), message: json.log }];
-          }
-          setState((prev) => ({
-            status: 'uploading',
-            percent: json.percent ?? (prev.status === 'uploading' ? prev.percent : 0),
-            stage: json.stage ?? (prev.status === 'uploading' ? prev.stage : ''),
-            log,
-          }));
+          if (data.log) log = [...log, { ts: Date.now(), message: data.log }];
+          updateAnalysis(data.percent, data.stage, log);
+        } catch {
+          // A chunk can end in the middle of one NDJSON object; keep parsing.
         }
       }
-    } catch (e) {
-      setState({ status: 'error', message: (e as Error).message });
-    }
+    };
+
+    xhr.onprogress = () => consumeLines();
+    xhr.onerror = () => setState({ status: 'error', message: 'Network error while uploading archive' });
+    xhr.onload = async () => {
+      if (xhr.status === 202) {
+        try {
+          const job = JSON.parse(xhr.responseText);
+          setState((previous) => previous.status === 'uploading' ? {
+            ...previous,
+            upload: { ...previous.upload, percent: 100, loaded: file.size },
+            analysis: { percent: 0, stage: 'Archive uploaded, starting analysis…' },
+          } : previous);
+          await waitForLocalJob(job.job_id, log);
+        } catch {
+          setState({ status: 'error', message: 'Invalid asynchronous job response' });
+        }
+        return;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        setState({ status: 'error', message: `HTTP ${xhr.status}` });
+        return;
+      }
+      consumeLines(true);
+      if (finalResult) setState({ status: 'done', data: finalResult });
+    };
+
+    const form = new FormData();
+    form.append('file', file);
+    xhr.send(form);
   }
 
   function reset() {

@@ -55,6 +55,7 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
         'pids': set()    # all PIDs seen for this command
     })
     all_timestamps = set()
+    timestamp_cache = {}
     header_cols = None
 
     # Derive collection date from info.txt so time-only stamps get full datetime
@@ -92,17 +93,17 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
 
             # Build a full datetime string so Plotly renders a proper time axis
             if collection_date is not None:
-                try:
-                    if offset == 2:
-                        t = datetime.datetime.strptime(
-                            time_str, "%I:%M:%S %p")
-                    else:
-                        t = datetime.datetime.strptime(time_str, "%H:%M:%S")
-                    timestamp = datetime.datetime.combine(
-                        collection_date, t.time()
-                    ).strftime("%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    timestamp = time_str
+                timestamp = timestamp_cache.get(time_str)
+                if timestamp is None:
+                    try:
+                        if offset == 2:
+                            t = datetime.datetime.strptime(time_str, "%I:%M:%S %p")
+                        else:
+                            t = datetime.datetime.strptime(time_str, "%H:%M:%S")
+                        timestamp = datetime.datetime.combine(collection_date, t.time()).strftime("%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        timestamp = time_str
+                    timestamp_cache[time_str] = timestamp
             else:
                 timestamp = time_str
 
@@ -119,19 +120,34 @@ def extract_top_cpu_consumers(pidstat_input_file, top_n=10):
 
                 all_timestamps.add(timestamp)
 
-                # Group by Command name (not PID)
-                process_data[command]['pids'].add(pid)
-
-                # For each timestamp, keep the MAX value if multiple PIDs
-                # have the same command (aggregate)
-                current_usr = process_data[command]['usr'].get(timestamp, 0)
-                current_sys = process_data[command]['system'].get(timestamp, 0)
-                current_wait = process_data[command]['wait'].get(timestamp, 0)
-
+                # Group by Command name (not PID).  Keep local references: on
+                # large captures this loop runs millions of times, and repeated
+                # nested defaultdict/dict lookups dominate CPU time.
                 proc = process_data[command]
-                proc['usr'][timestamp] = max(current_usr, usr)
-                proc['system'][timestamp] = max(current_sys, system)
-                proc['wait'][timestamp] = max(current_wait, wait)
+                proc['pids'].add(pid)
+                usr_values = proc['usr']
+                system_values = proc['system']
+                wait_values = proc['wait']
+
+                # For each timestamp, retain the same max-per-command semantics
+                # as before, without allocating/calling max() for every row.
+                previous = usr_values.get(timestamp)
+                if previous is None:
+                    usr_values[timestamp] = usr if usr > 0 else 0
+                elif usr > previous:
+                    usr_values[timestamp] = usr
+
+                previous = system_values.get(timestamp)
+                if previous is None:
+                    system_values[timestamp] = system if system > 0 else 0
+                elif system > previous:
+                    system_values[timestamp] = system
+
+                previous = wait_values.get(timestamp)
+                if previous is None:
+                    wait_values[timestamp] = wait if wait > 0 else 0
+                elif wait > previous:
+                    wait_values[timestamp] = wait
 
             except (ValueError, IndexError):
                 # Skip malformed lines

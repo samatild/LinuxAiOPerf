@@ -20,17 +20,34 @@ export interface ReportMetadata {
   kernel?: string;
   cpu_model?: string;
   collection_date?: string;
+  capture_start?: string;
+  capture_end?: string;
+  runtime?: string;
 }
 
 export interface SysConfigData {
   information?: { runtime_info: string; os_release: string };
   hardware?: { lshw: string; dmidecode: string };
-  storage?: { lsscsi?: string; lsblk?: string; df?: string; ls_dev_mapper?: string };
+  storage?: {
+    lsscsi?: string;
+    lsblk?: string;
+    df?: string;
+    ls_dev_mapper?: string;
+    capacity?: {
+      filesystem: string;
+      size: string;
+      used: string;
+      available: string;
+      use_percent: number;
+      mount: string;
+      severity: 'normal' | 'warning' | 'critical';
+    }[];
+  };
   lvm?: {
     topology?: {
       pvs: { name: string; vg: string; size: string; free: string }[];
       vgs: { name: string; size: string; free: string }[];
-      lvs: { name: string; vg: string; size: string; type: string }[];
+      lvs: { name: string; vg: string; size: string; type: string; device_mapper?: string }[];
     };
     pvs_raw?: string;
     vgs_raw?: string;
@@ -71,9 +88,17 @@ export interface ProcessDetailsData {
   iotop?: TimestampChunksMeta;
 }
 
+export interface CaptureHealth {
+  cpu_count?: number;
+  peak_normalized_load_1m?: number;
+  min_available_memory_bytes?: number;
+  peak_swap_used_bytes?: number;
+}
+
 export interface ReportData {
   report_id: string;
   metadata: ReportMetadata;
+  capture_health?: CaptureHealth;
   sysconfig?: SysConfigData;
   performance?: PerformanceData;
   process_activity?: ProcessActivityData;

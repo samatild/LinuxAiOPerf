@@ -1,6 +1,6 @@
 # Linux AIO Performance
 
-[![Latest Release](https://img.shields.io/badge/release-v2.3.2-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
+[![Latest Release](https://img.shields.io/badge/release-v2.3.4-blue.svg)](https://github.com/samatild/LinuxAiOPerf/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 [![Live App](https://img.shields.io/badge/app-linuxaioperf.matildes.dev-brightgreen.svg)](https://linuxaioperf.matildes.dev/)
 <a href="https://ko-fi.com/L8S723YI44" target="_blank" rel="noopener noreferrer"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" height="20" alt="Like the tool? Buy me a Coffee" /></a>

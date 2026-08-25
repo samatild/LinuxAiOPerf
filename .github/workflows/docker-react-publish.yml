@@ -45,12 +45,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-azure-feature:
-    name: Deploy published feature image to Azure
+  deploy-azure-main:
+    name: Deploy published main image to Azure
     needs: build-and-push
-    # The deployment stays entirely on the feature branch. main continues to
-    # build and publish its existing latest image without any Azure deployment.
-    if: github.ref == 'refs/heads/chore/azure-react-webapp'
+    # Production follows main and deploys the immutable image produced above.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy the immutable image already published by the build job
